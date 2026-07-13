@@ -14,7 +14,11 @@ import {
 // ─── Global CSS ──────────────────────────────────────────────────────────────
 
 const STYLES = `
-  * { box-sizing: border-box; }
+  * { 
+    box-sizing: border-box; 
+    user-select: none;
+    -webkit-user-select: none;
+  }
 
   @keyframes aurora-1 {
     0%, 100% { transform: translate(0%,0%) scale(1); opacity: 0.65; }
@@ -116,7 +120,10 @@ const STYLES = `
   ::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.25); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.5); }
 
-  body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+  body { 
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+    cursor: default;
+  }
 `;
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
