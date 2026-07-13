@@ -794,9 +794,6 @@ function LandingPage({ setPage }: { setPage: (p: string) => void }) {
             style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
             Start Managing →
           </button>
-          <button className="glass px-8 py-3.5 rounded-2xl text-slate-300 font-semibold text-sm hover:text-white transition-all">
-            ▶ Watch Demo
-          </button>
         </motion.div>
 
         {/* Dashboard preview */}
