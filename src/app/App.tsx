@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import Papa from "papaparse";
 import { motion, AnimatePresence } from "motion/react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -8,7 +12,7 @@ import {
   LayoutDashboard, TrendingUp, Brain, Bell, Settings,
   ArrowUpRight, ArrowDownRight, Wallet, Target, Download,
   Plus, BarChart2, Sparkles, Menu, ChevronRight, DollarSign,
-  CheckCircle, Filter, FileText, Shield, Globe, Layers,
+  CheckCircle, Filter, FileText, Shield, Globe, Layers, Edit2, Trash2,
 } from "lucide-react";
 
 // ─── Global CSS ──────────────────────────────────────────────────────────────
@@ -39,6 +43,20 @@ const STYLES = `
   @keyframes float2 {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
     50%       { transform: translateY(-10px) rotate(-1deg); }
+  }
+  @keyframes shake-bell {
+    0%, 100% { transform: rotate(0deg); }
+    15% { transform: rotate(15deg); }
+    30% { transform: rotate(-15deg); }
+    45% { transform: rotate(10deg); }
+    60% { transform: rotate(-10deg); }
+    75% { transform: rotate(5deg); }
+    85% { transform: rotate(-5deg); }
+  }
+  .shake-bell {
+    animation: shake-bell 1.5s ease-in-out infinite;
+    transform-origin: top center;
+    display: inline-block;
   }
   @keyframes pulse-ring {
     0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
@@ -128,71 +146,11 @@ const STYLES = `
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const timelineData = [
-  { month: "Jan", actual: 42000, budget: 50000, forecast: 45000 },
-  { month: "Feb", actual: 38000, budget: 50000, forecast: 42000 },
-  { month: "Mar", actual: 55000, budget: 60000, forecast: 52000 },
-  { month: "Apr", actual: 48000, budget: 55000, forecast: 50000 },
-  { month: "May", actual: 62000, budget: 65000, forecast: 58000 },
-  { month: "Jun", actual: 71000, budget: 70000, forecast: 68000 },
-  { month: "Jul", actual: 58000, budget: 75000, forecast: 65000 },
-];
+export const DataContext = createContext<any>(null);
 
-const categoryData = [
-  { name: "Catering",       value: 32, color: "#3B82F6", amount: 124000 },
-  { name: "Venue",          value: 25, color: "#8B5CF6", amount: 97000  },
-  { name: "Entertainment",  value: 18, color: "#22D3EE", amount: 70000  },
-  { name: "Logistics",      value: 15, color: "#10B981", amount: 58000  },
-  { name: "Marketing",      value: 10, color: "#F59E0B", amount: 39000  },
-];
-
-const barData = [
-  { cat: "Catering",      spent: 124000, budget: 150000 },
-  { cat: "Venue",         spent: 97000,  budget: 100000 },
-  { cat: "Entertainment", spent: 70000,  budget: 80000  },
-  { cat: "Logistics",     spent: 58000,  budget: 65000  },
-  { cat: "Marketing",     spent: 39000,  budget: 50000  },
-];
-
-const recentExpenses = [
-  { id: 1, title: "Grand Ballroom Booking",    cat: "Venue",          amount: 45000, status: "paid",    date: "Jul 8",  emoji: "🏛️" },
-  { id: 2, title: "Premium Catering Package",  cat: "Catering",       amount: 28500, status: "pending", date: "Jul 7",  emoji: "🍽️" },
-  { id: 3, title: "Live Band Performance",     cat: "Entertainment",  amount: 18000, status: "paid",    date: "Jul 6",  emoji: "🎵" },
-  { id: 4, title: "Event Photography",         cat: "Media",          amount: 12000, status: "paid",    date: "Jul 5",  emoji: "📸" },
-  { id: 5, title: "Transport & Logistics",     cat: "Logistics",      amount: 8500,  status: "overdue", date: "Jul 4",  emoji: "🚌" },
-];
-
-const aiInsights = [
-  { type: "warning", emoji: "⚡", title: "Catering budget exceeded by ₹12,500", sub: "Consider renegotiating with vendors" },
-  { type: "info",    emoji: "📈", title: "Entertainment costs up 18% vs last month", sub: "Q3 trend analysis available" },
-  { type: "success", emoji: "🎯", title: "Budget utilization at 83%", sub: "On track for Q3 targets" },
-  { type: "warning", emoji: "💡", title: "3 payments pending in 5 days", sub: "₹38,500 total due soon" },
-];
-
-const forecasts = [
-  { cat: "Catering",      current: 124000, predicted: 158000, risk: "high"   },
-  { cat: "Venue",         current: 97000,  predicted: 101000, risk: "low"    },
-  { cat: "Entertainment", current: 70000,  predicted: 88000,  risk: "medium" },
-  { cat: "Logistics",     current: 58000,  predicted: 62000,  risk: "low"    },
-];
-
-const features = [
-  { icon: <Brain size={22} />,       title: "AI-Powered Insights",   desc: "Predictive analytics flag overruns before they happen — days in advance.",         color: "#8B5CF6" },
-  { icon: <TrendingUp size={22} />,  title: "Real-time Analytics",   desc: "Live expense tracking with interactive dashboards that update instantly.",          color: "#3B82F6" },
-  { icon: <Shield size={22} />,      title: "Smart Budgeting",       desc: "Category-level budgets with threshold alerts so you are never caught off guard.",   color: "#22D3EE" },
-  { icon: <FileText size={22} />,    title: "Board-ready Reports",   desc: "Generate stunning PDF summaries with one click — no design skills required.",       color: "#10B981" },
-  { icon: <Globe size={22} />,       title: "Multi-currency",        desc: "International events covered with real-time FX rates baked into every figure.",     color: "#F59E0B" },
-  { icon: <Layers size={22} />,      title: "Team Collaboration",    desc: "Role-based access for organizers, finance leads, and executive stakeholders.",       color: "#EC4899" },
-];
-
-const plans = [
-  { name: "Starter",    price: "₹999",   period: "/mo",  desc: "College events & small gatherings",      color: "#3B82F6", popular: false,
-    perks: ["5 events/month", "Core analytics", "PDF reports", "Email support"] },
-  { name: "Pro",        price: "₹2,999", period: "/mo",  desc: "Professional event managers",            color: "#8B5CF6", popular: true,
-    perks: ["Unlimited events", "AI insights", "Advanced analytics", "Priority support", "5 team seats"] },
-  { name: "Enterprise", price: "Custom", period: "",     desc: "Large orgs & corporate teams",           color: "#22D3EE", popular: false,
-    perks: ["Everything in Pro", "Custom integrations", "Dedicated manager", "99.9% SLA", "Unlimited seats"] },
-];
+export function useData() {
+  return useContext(DataContext);
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -280,7 +238,7 @@ function Navbar({ page, setPage }: { page: string; setPage: (p: string) => void 
           </button>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white glow-blue"
             style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
-            AK
+            SR
           </div>
         </div>
       </div>
@@ -301,6 +259,13 @@ const sideItems = [
 
 function Sidebar({ page, setPage }: { page: string; setPage: (p: string) => void }) {
   const [open, setOpen] = useState(true);
+  const { events, recentExpenses } = useData();
+
+  const hasAlerts = (events || []).some((ev: any) => {
+    const expenses = recentExpenses ? recentExpenses.filter((e: any) => e.eventId === ev.id || (!e.eventId && ev.id === "1")) : [];
+    const totalExp = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+    return ev.budget - totalExp < 0;
+  });
 
   return (
     <motion.aside
@@ -328,11 +293,12 @@ function Sidebar({ page, setPage }: { page: string; setPage: (p: string) => void
               border: "1px solid rgba(59,130,246,0.28)"
             } : {}}
           >
-            <span className={page === it.page ? "text-blue-400" : "group-hover:text-slate-300 transition-colors"}>
+            <span className={`${page === it.page ? "text-blue-400" : "group-hover:text-slate-300 transition-colors"} ${it.page === 'alerts' && hasAlerts ? 'shake-bell text-red-400' : ''}`}>
               {it.icon}
             </span>
             {open && <span className="truncate">{it.label}</span>}
-            {open && page === it.page && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />}
+            {open && page === it.page && !hasAlerts && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />}
+            {open && it.page === 'alerts' && hasAlerts && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />}
           </button>
         ))}
       </div>
@@ -340,11 +306,11 @@ function Sidebar({ page, setPage }: { page: string; setPage: (p: string) => void
         <div className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-white/5 transition-all ${!open ? "justify-center" : ""}`}>
           <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
             style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
-            AK
+            SR
           </div>
           {open && (
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-white truncate">Ankit Kumar</div>
+              <div className="text-xs font-semibold text-white truncate">S R</div>
               <div className="text-[10px] text-slate-400 truncate">Event Manager</div>
             </div>
           )}
@@ -395,34 +361,231 @@ function ChartTip({ active, payload, label, accent = "#3B82F6" }: any) {
   );
 }
 
+
+// ─── New Event Modal ───────────────────────────────────────────────────────────
+
+function NewEventModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: (id: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  if (!open) return null;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const fd = new FormData(e.currentTarget);
+    const newEvent = {
+      id: Date.now().toString(),
+      name: fd.get("name") as string,
+      budget: Number(fd.get("budget"))
+    };
+    try {
+      await fetch("http://localhost:3001/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEvent)
+      });
+      onSuccess(newEvent.id);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-strong p-6 rounded-2xl w-full max-w-md border border-white/10 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+        <h2 className="text-xl font-bold text-white mb-4">Create New Event</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Event Name</label>
+            <input required name="name" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Summer Festival" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Total Budget (₹)</label>
+            <input required name="budget" type="number" min="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="1000000" />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl text-white font-bold text-sm hover:opacity-90 mt-2" style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
+            {loading ? "Creating..." : "Create Event"}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Add Expense Modal ────────────────────────────────────────────────────────
+
+function AddExpenseModal({ open, onClose, onSuccess, eventId, expenseToEdit }: { open: boolean; onClose: () => void; onSuccess: () => void; eventId: string; expenseToEdit?: any }) {
+  const [loading, setLoading] = useState(false);
+  
+  if (!open) return null;
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      title: fd.get("title") as string,
+      cat: fd.get("cat") as string,
+      amount: Number(fd.get("amount")),
+      status: fd.get("status") as string,
+      date: expenseToEdit ? expenseToEdit.date : new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric' }),
+      emoji: expenseToEdit ? expenseToEdit.emoji : "📝",
+      eventId
+    };
+
+    try {
+      if (expenseToEdit) {
+        await fetch(`http://localhost:3001/recentExpenses/${expenseToEdit.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: expenseToEdit.id })
+        });
+      } else {
+        await fetch("http://localhost:3001/recentExpenses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, id: Date.now().toString() })
+        });
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-strong p-6 rounded-2xl w-full max-w-md border border-white/10 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+        <h2 className="text-xl font-bold text-white mb-4">{expenseToEdit ? "Edit Expense" : "Add New Expense"}</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Title</label>
+            <input required name="title" defaultValue={expenseToEdit?.title || ""} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="e.g. Venue Booking" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Amount (₹)</label>
+              <input required name="amount" type="number" min="0" defaultValue={expenseToEdit?.amount || ""} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="5000" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Status</label>
+              <select name="status" defaultValue={expenseToEdit?.status || "paid"} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors [&>option]:bg-[#080e20]">
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Category</label>
+            <select name="cat" defaultValue={expenseToEdit?.cat || "Venue"} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors [&>option]:bg-[#080e20]">
+              <option value="Venue">Venue</option>
+              <option value="Catering">Catering</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Logistics">Logistics</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Media">Media</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl text-white font-bold text-sm transition-all hover:opacity-90 mt-2" style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
+            {loading ? "Saving..." : (expenseToEdit ? "Update Expense" : "Save Expense")}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Dashboard view ───────────────────────────────────────────────────────────
 
 function DashboardPage({ setPage }: { setPage: (p: string) => void }) {
+  const { events, currentEventId, setCurrentEventId, timelineData, recentExpenses, aiInsights, refreshData } = useData();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [newEventModalOpen, setNewEventModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      await fetch(`http://localhost:3001/recentExpenses/${id}`, { method: "DELETE" });
+      refreshData();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function handleOpenAddModal() {
+    setEditingExpense(null);
+    setModalOpen(true);
+  }
+
+  function handleOpenEditModal(expense: any) {
+    setEditingExpense(expense);
+    setModalOpen(true);
+  }
+  
+  const currentEvent = events?.find((e: any) => e.id === currentEventId) || events?.[0] || { id: "1", name: "Annual Gala 2025", budget: 485000 };
+  const eventId = currentEvent.id;
+  const eventExpenses = recentExpenses.filter((e: any) => e.eventId === eventId || (!e.eventId && eventId === "1"));
+  
+  const totalBudget = currentEvent.budget;
+  const totalExpenses = eventExpenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+  const remaining = totalBudget - totalExpenses;
+
   const stats = [
-    { label: "Total Budget",    value: "₹4,85,000", delta: "+5.2%", up: true,  icon: <Target size={18} />,    color: "#3B82F6" },
-    { label: "Total Expenses",  value: "₹3,88,500", delta: "+12.1%", up: false, icon: <DollarSign size={18} />, color: "#8B5CF6" },
-    { label: "Remaining",       value: "₹96,500",   delta: "-8.3%",  up: false, icon: <Wallet size={18} />,    color: "#22D3EE" },
+    { label: "Total Budget",    value: fmt(totalBudget), delta: "", up: true,  icon: <Target size={18} />,    color: "#3B82F6" },
+    { label: "Total Expenses",  value: fmt(totalExpenses), delta: "", up: false, icon: <DollarSign size={18} />, color: "#8B5CF6" },
+    { label: "Remaining",       value: fmt(remaining),   delta: "",  up: false, icon: <Wallet size={18} />,    color: "#22D3EE" },
     { label: "Savings YTD",     value: "₹21,000",   delta: "+3.4%",  up: true,  icon: <TrendingUp size={18} />, color: "#10B981" },
   ];
 
+  // Dynamic Category Data
+  const catMap = eventExpenses.reduce((acc: any, e: any) => {
+    acc[e.cat] = (acc[e.cat] || 0) + e.amount;
+    return acc;
+  }, {});
+  const palette = ["#3B82F6", "#8B5CF6", "#22D3EE", "#10B981", "#F59E0B", "#EC4899"];
+  const dynamicCategoryData = Object.keys(catMap).map((k, i) => ({
+    name: k,
+    amount: catMap[k],
+    value: totalExpenses ? Math.round((catMap[k] / totalExpenses) * 100) : 0,
+    color: palette[i % palette.length]
+  }));
+
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Overview</h1>
-          <p className="text-slate-400 text-xs mt-0.5">Annual Gala 2025 · Updated just now</p>
+    <>
+      <NewEventModal open={newEventModalOpen} onClose={() => setNewEventModalOpen(false)} onSuccess={(id) => { setCurrentEventId(id); refreshData(); }} />
+      <AddExpenseModal open={modalOpen} onClose={() => { setModalOpen(false); setEditingExpense(null); }} onSuccess={refreshData} eventId={eventId} expenseToEdit={editingExpense} />
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">Overview</h1>
+              <select value={eventId} onChange={(e) => setCurrentEventId(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white text-sm focus:outline-none [&>option]:bg-[#080e20]">
+                {events?.map((ev: any) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+              </select>
+            </div>
+            <p className="text-slate-400 text-xs mt-0.5">Budget: {fmt(totalBudget)} · Updated just now</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setNewEventModalOpen(true)} className="glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
+              <Sparkles size={13} /> New Event
+            </button>
+            <button onClick={() => setModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs text-white font-semibold transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
+              <Plus size={13} /> Add Expense
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button className="glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
-            <Filter size={13} /> Filter
-          </button>
-          <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs text-white font-semibold transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
-            <Plus size={13} /> Add Expense
-          </button>
-        </div>
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -475,15 +638,15 @@ function DashboardPage({ setPage }: { setPage: (p: string) => void }) {
           <p className="text-slate-500 text-xs mb-3">Spend distribution</p>
           <ResponsiveContainer width="100%" height={148}>
             <PieChart>
-              <Pie data={categoryData} cx="50%" cy="50%" innerRadius={42} outerRadius={64}
+              <Pie data={dynamicCategoryData} cx="50%" cy="50%" innerRadius={42} outerRadius={64}
                 paddingAngle={3} dataKey="value" strokeWidth={0}>
-                {categoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                {dynamicCategoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
               <Tooltip formatter={(v: any) => [`${v}%`]} contentStyle={{ background: "rgba(8,14,32,0.95)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12, fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-2 mt-1">
-            {categoryData.map((c, i) => (
+            {dynamicCategoryData.map((c: any, i: number) => (
               <div key={i} className="flex items-center gap-2 text-xs">
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
                 <span className="text-slate-300 flex-1">{c.name}</span>
@@ -505,7 +668,7 @@ function DashboardPage({ setPage }: { setPage: (p: string) => void }) {
             </button>
           </div>
           <div className="space-y-1.5">
-            {recentExpenses.map(exp => {
+            {eventExpenses.map((exp: any) => {
               const ss = statusStyle(exp.status);
               return (
                 <div key={exp.id}
@@ -517,6 +680,17 @@ function DashboardPage({ setPage }: { setPage: (p: string) => void }) {
                     <div className="text-sm font-medium text-white truncate group-hover:text-blue-300 transition-colors">{exp.title}</div>
                     <div className="text-[11px] text-slate-400 mt-0.5">{exp.cat} · {exp.date}</div>
                   </div>
+                  
+                  {/* ACTIONS */}
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                    <button onClick={(e) => { e.stopPropagation(); handleOpenEditModal(exp); }} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-white/5 transition-colors">
+                      <Edit2 size={13} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(exp.id); }} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
                   <div className="text-right shrink-0">
                     <div className="text-sm font-semibold text-white mb-1">{fmt(exp.amount)}</div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${ss.text} ${ss.bg}`}>
@@ -565,12 +739,40 @@ function DashboardPage({ setPage }: { setPage: (p: string) => void }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
 // ─── Analytics view ───────────────────────────────────────────────────────────
 
 function AnalyticsPage() {
+  const { events, currentEventId, timelineData, recentExpenses, refreshData } = useData();
+  const currentEvent = events?.find((e: any) => e.id === currentEventId) || events?.[0] || { id: "1", name: "Annual Gala 2025", budget: 485000 };
+  const eventId = currentEvent.id;
+  const eventExpenses = recentExpenses.filter((e: any) => e.eventId === eventId || (!e.eventId && eventId === "1"));
+
+  // Dynamic Category Data for Analytics
+  const catMap = eventExpenses.reduce((acc: any, e: any) => {
+    acc[e.cat] = (acc[e.cat] || 0) + e.amount;
+    return acc;
+  }, {});
+  const palette = ["#3B82F6", "#8B5CF6", "#22D3EE", "#10B981", "#F59E0B", "#EC4899"];
+  const totalExpenses = eventExpenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+  const dynamicCategoryData = Object.keys(catMap).map((k, i) => ({
+    name: k,
+    amount: catMap[k],
+    value: totalExpenses ? Math.round((catMap[k] / totalExpenses) * 100) : 0,
+    color: palette[i % palette.length]
+  }));
+
+  const dynamicBarData = Object.keys(catMap).map(k => ({
+    cat: k,
+    spent: catMap[k],
+    budget: Math.round(currentEvent.budget / 5) // Mock category budget
+  }));
+
+
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -578,9 +780,7 @@ function AnalyticsPage() {
           <h1 className="text-2xl font-bold text-white">Analytics</h1>
           <p className="text-slate-400 text-xs mt-0.5">Spending patterns · Annual Gala 2025</p>
         </div>
-        <button className="glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
-          <Download size={13} /> Export Report
-        </button>
+
       </div>
 
       {/* Horizontal bar */}
@@ -588,7 +788,7 @@ function AnalyticsPage() {
         <h3 className="text-white font-semibold text-sm mb-0.5">Budget Utilization by Category</h3>
         <p className="text-slate-500 text-xs mb-5">Actual spend vs allocated budget</p>
         <ResponsiveContainer width="100%" height={230}>
-          <BarChart data={barData} layout="vertical" barSize={7} barGap={3}>
+          <BarChart data={dynamicBarData} layout="vertical" barSize={7} barGap={3}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" horizontal={false} />
             <XAxis type="number" stroke="#334155" tick={{ fill: "#64748B", fontSize: 11 }} tickFormatter={v => `₹${v/1000}K`} />
             <YAxis type="category" dataKey="cat" stroke="#334155" tick={{ fill: "#94A3B8", fontSize: 11 }} width={90} />
@@ -601,8 +801,8 @@ function AnalyticsPage() {
 
       {/* Category rings */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {categoryData.map((c, i) => {
-          const pct = Math.round((c.amount / (c.value * 5200)) * 100);
+        {dynamicCategoryData.map((c: any, i: number) => {
+          const pct = c.value;
           return (
             <motion.div key={i}
               initial={{ opacity: 0, scale: 0.9 }}
@@ -653,6 +853,7 @@ function AnalyticsPage() {
 // ─── AI Insights view ─────────────────────────────────────────────────────────
 
 function AIInsightsPage() {
+  const { aiInsights, forecasts } = useData();
   const [ready, setReady] = useState(false);
   const msg = "Based on 7 months of data, I predict a 23% overrun in Catering by Q3 end. Venue is stable. Entertainment spend spiked 18%—renegotiate contracts now to save an estimated ₹14,000.";
 
@@ -754,6 +955,25 @@ function AIInsightsPage() {
 // ─── Landing page ─────────────────────────────────────────────────────────────
 
 function LandingPage({ setPage }: { setPage: (p: string) => void }) {
+  const { timelineData, features, plans, events, currentEventId, recentExpenses } = useData();
+
+  const currentEvent = events?.find((e: any) => e.id === currentEventId) || events?.[0] || { id: "1", name: "Annual Gala 2025", budget: 485000 };
+  const eventId = currentEvent.id;
+  const eventExpenses = recentExpenses ? recentExpenses.filter((e: any) => e.eventId === eventId || (!e.eventId && eventId === "1")) : [];
+  
+  const totalBudget = currentEvent.budget;
+  const totalExpenses = eventExpenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+  const remaining = totalBudget - totalExpenses;
+
+  const iconMap: Record<string, React.ReactNode> = {
+    Brain: <Brain size={22} />,
+    TrendingUp: <TrendingUp size={22} />,
+    Shield: <Shield size={22} />,
+    FileText: <FileText size={22} />,
+    Globe: <Globe size={22} />,
+    Layers: <Layers size={22} />
+  };
+
   return (
     <div>
       {/* Hero */}
@@ -805,7 +1025,7 @@ function LandingPage({ setPage }: { setPage: (p: string) => void }) {
           {/* Floating card left */}
           <div className="float glass rounded-2xl p-4 absolute -top-5 left-4 md:left-0 w-44 hidden md:block z-10">
             <div className="text-[10px] text-slate-400 mb-1.5">Total Budget</div>
-            <div className="text-xl font-bold text-white">₹4,85,000</div>
+            <div className="text-xl font-bold text-white">{fmt(totalBudget)}</div>
             <div className="flex items-center gap-1 mt-2 text-[11px] text-emerald-400 font-medium">
               <ArrowUpRight size={11} /> +5.2% vs last event
             </div>
@@ -827,10 +1047,10 @@ function LandingPage({ setPage }: { setPage: (p: string) => void }) {
             <div className="p-5">
               <div className="grid grid-cols-4 gap-3 mb-4">
                 {[
-                  ["Total Budget","₹4,85,000","#3B82F6",72],
-                  ["Expenses","₹3,88,500","#8B5CF6",80],
-                  ["Remaining","₹96,500","#22D3EE",20],
-                  ["Savings","₹21,000","#10B981",44],
+                  ["Total Budget", fmt(totalBudget), "#3B82F6", 100],
+                  ["Expenses", fmt(totalExpenses), "#8B5CF6", totalBudget ? (totalExpenses/totalBudget)*100 : 0],
+                  ["Remaining", fmt(remaining), "#22D3EE", totalBudget ? (remaining/totalBudget)*100 : 0],
+                  ["Savings", "₹21,000", "#10B981", 44],
                 ].map(([lbl,val,col,pct],i) => (
                   <div key={i} className="glass-subtle rounded-xl p-3">
                     <div className="text-[10px] text-slate-400 mb-1.5">{lbl}</div>
@@ -920,7 +1140,7 @@ function LandingPage({ setPage }: { setPage: (p: string) => void }) {
                 className="glass rounded-2xl p-6 cursor-default group">
                 <div className="p-3 rounded-xl w-fit mb-5 transition-transform group-hover:scale-110"
                   style={{ background: `${f.color}18` }}>
-                  <span style={{ color: f.color }}>{f.icon}</span>
+                  <span style={{ color: f.color }}>{iconMap[f.iconName]}</span>
                 </div>
                 <h3 className="text-white font-bold mb-2 text-sm">{f.title}</h3>
                 <p className="text-slate-400 text-xs leading-relaxed">{f.desc}</p>
@@ -1025,7 +1245,247 @@ function LandingPage({ setPage }: { setPage: (p: string) => void }) {
   );
 }
 
+
+
+function ExportModal({ open, format, events, onClose, onDownload }: { open: boolean, format: "pdf" | "excel" | null, events: any[], onClose: () => void, onDownload: (f: "pdf" | "excel", id: string) => void }) {
+  const [selected, setSelected] = useState("all");
+  
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-strong p-6 rounded-2xl w-full max-w-sm border border-white/10 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+        <h2 className="text-xl font-bold text-white mb-4">Export to {format?.toUpperCase()}</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Select Data to Export</label>
+            <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none [&>option]:bg-[#080e20]">
+              <option value="all">All Events (Summary)</option>
+              {events?.map((ev: any) => <option key={ev.id} value={ev.id}>{ev.name} (Detailed)</option>)}
+            </select>
+          </div>
+          <button onClick={() => { if(format) onDownload(format, selected); }} className="w-full py-2.5 rounded-xl text-white font-bold text-sm transition-all hover:opacity-90" style={{ background: "linear-gradient(135deg, #3B82F6, #8B5CF6)" }}>
+            Download File
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Reports view ─────────────────────────────────────────────────────────────
+
+
+function ReportsPage() {
+  const { events, currentEventId, recentExpenses, refreshData } = useData();
+
+  const reportData = (events || []).map((ev: any) => {
+    const expenses = recentExpenses ? recentExpenses.filter((e: any) => e.eventId === ev.id || (!e.eventId && ev.id === "1")) : [];
+    const totalExp = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+    const rem = ev.budget - totalExp;
+    return { ...ev, totalExp, rem, expensesCount: expenses.length };
+  });
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        for (const row of results.data as any[]) {
+          if (!row.Title) continue;
+          const newExpense = {
+            id: Date.now().toString() + Math.random().toString(),
+            title: row.Title,
+            cat: row.Category || "Other",
+            amount: Number(row.Amount) || 0,
+            status: row.Status || "paid",
+            date: row.Date || new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric' }),
+            emoji: "📄",
+            eventId: currentEventId || "1"
+          };
+          await fetch("http://localhost:3001/recentExpenses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newExpense)
+          });
+        }
+        refreshData();
+      }
+    });
+  }
+
+  const [exportModal, setExportModal] = useState<"pdf" | "excel" | null>(null);
+
+  function handleDownload(format: "pdf" | "excel", eventId: string) {
+    if (eventId === "all") {
+      if (format === "pdf") {
+        const doc = new jsPDF();
+        doc.text("All Events Report", 14, 15);
+        autoTable(doc, {
+          startY: 20,
+          head: [["Name", "Budget", "Total Expenses", "Remaining", "Transactions"]],
+          body: reportData.map((e: any) => [e.name, `Rs ${e.budget}`, `Rs ${e.totalExp}`, `Rs ${e.rem}`, e.expensesCount]),
+        });
+        doc.save("all_events_report.pdf");
+      } else {
+        const ws = XLSX.utils.json_to_sheet(reportData.map((e: any) => ({
+          Name: e.name, Budget: e.budget, "Total Expenses": e.totalExp, Remaining: e.rem, Transactions: e.expensesCount
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Events Report");
+        XLSX.writeFile(wb, "all_events_report.xlsx");
+      }
+    } else {
+      const targetEvent = events?.find((e: any) => e.id === eventId);
+      const evExpenses = recentExpenses ? recentExpenses.filter((e: any) => e.eventId === eventId || (!e.eventId && eventId === "1")) : [];
+      if (format === "pdf") {
+        const doc = new jsPDF();
+        doc.text(`Expense Report: ${targetEvent?.name || 'Event'}`, 14, 15);
+        autoTable(doc, {
+          startY: 20,
+          head: [["ID", "Title", "Category", "Amount", "Status", "Date"]],
+          body: evExpenses.map((e: any) => [e.id, e.title, e.cat, `Rs ${e.amount}`, e.status, e.date]),
+        });
+        doc.save(`expenses_${(targetEvent?.name || 'event').replace(/\s+/g, '_')}.pdf`);
+      } else {
+        const ws = XLSX.utils.json_to_sheet(evExpenses);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+        XLSX.writeFile(wb, `expenses_${(targetEvent?.name || 'event').replace(/\s+/g, '_')}.xlsx`);
+      }
+    }
+    setExportModal(null);
+  }
+
+  return (
+    <>
+    <ExportModal open={!!exportModal} format={exportModal} events={events || []} onClose={() => setExportModal(null)} onDownload={handleDownload} />
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white">All Events Report</h1>
+          <p className="text-slate-400 text-xs mt-0.5">Comprehensive financial summary across all events</p>
+        </div>
+        <div className="flex gap-2">
+          <label className="cursor-pointer glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
+            <Plus size={13} /> Import CSV
+            <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          </label>
+          <button onClick={() => setExportModal("pdf")} className="glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
+            <Download size={13} /> PDF
+          </button>
+          <button onClick={() => setExportModal("excel")} className="glass px-4 py-2 rounded-xl text-xs text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
+            <Download size={13} /> Excel
+          </button>
+        </div>
+      </div>
+
+      <div className="glass rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 bg-white/[0.02]">
+                <th className="p-4 text-xs font-semibold text-slate-400">Event Name</th>
+                <th className="p-4 text-xs font-semibold text-slate-400">Budget</th>
+                <th className="p-4 text-xs font-semibold text-slate-400">Total Expenses</th>
+                <th className="p-4 text-xs font-semibold text-slate-400">Remaining</th>
+                <th className="p-4 text-xs font-semibold text-slate-400">Transactions</th>
+                <th className="p-4 text-xs font-semibold text-slate-400">Health</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {reportData.map((row: any, i: number) => (
+                <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="p-4 text-sm font-medium text-white">{row.name}</td>
+                  <td className="p-4 text-sm text-slate-300">{fmt(row.budget)}</td>
+                  <td className="p-4 text-sm text-slate-300">{fmt(row.totalExp)}</td>
+                  <td className="p-4 text-sm text-slate-300">{fmt(row.rem)}</td>
+                  <td className="p-4 text-sm text-slate-300">{row.expensesCount}</td>
+                  <td className="p-4 text-sm">
+                    {row.rem < 0 ? (
+                      <span className="text-xs font-medium px-2 py-1 rounded bg-red-400/10 text-red-400">Over Budget</span>
+                    ) : row.totalExp === 0 ? (
+                      <span className="text-xs font-medium px-2 py-1 rounded bg-slate-400/10 text-slate-400">Not Started</span>
+                    ) : (
+                      <span className="text-xs font-medium px-2 py-1 rounded bg-emerald-400/10 text-emerald-400">On Track</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {reportData.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 text-sm">No events found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+
+// ─── Alerts view ──────────────────────────────────────────────────────────────
+
+function AlertsPage() {
+  const { events, recentExpenses } = useData();
+
+  const alerts = (events || []).map((ev: any) => {
+    const expenses = recentExpenses ? recentExpenses.filter((e: any) => e.eventId === ev.id || (!e.eventId && ev.id === "1")) : [];
+    const totalExp = expenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+    const rem = ev.budget - totalExp;
+    return { ...ev, totalExp, rem, expensesCount: expenses.length };
+  }).filter((ev: any) => ev.rem < 0);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-white">System Alerts</h1>
+        <p className="text-slate-400 text-xs mt-0.5">Critical budget notifications and anomalies</p>
+      </div>
+
+      <div className="space-y-3">
+        {alerts.length === 0 ? (
+          <div className="glass rounded-2xl p-8 text-center border border-white/5">
+            <div className="w-12 h-12 rounded-full bg-emerald-400/10 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle size={20} className="text-emerald-400" />
+            </div>
+            <h3 className="text-white font-semibold mb-1">All Clear!</h3>
+            <p className="text-slate-400 text-sm">No events are currently over budget. Great job!</p>
+          </div>
+        ) : (
+          alerts.map((ev: any, i: number) => (
+            <div key={i} className="glass rounded-2xl p-5 border border-red-500/20 bg-red-500/5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                  <Bell size={18} className="text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-red-400 font-bold text-sm mb-1">Budget Exceeded: {ev.name}</h3>
+                  <p className="text-slate-300 text-sm">
+                    This event has exceeded its allocated budget of <span className="font-semibold text-white">{fmt(ev.budget)}</span>.
+                    Current total expenses are <span className="font-semibold text-white">{fmt(ev.totalExp)}</span>.
+                  </p>
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-500/20 text-red-300 text-xs font-semibold">
+                    <TrendingUp size={12} /> Over budget by {fmt(Math.abs(ev.rem))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Inner app shell (sidebar + content) ─────────────────────────────────────
+
+
 
 function AppShell({ page, setPage }: { page: string; setPage: (p: string) => void }) {
   return (
@@ -1044,7 +1504,9 @@ function AppShell({ page, setPage }: { page: string; setPage: (p: string) => voi
             {page === "dashboard" && <DashboardPage setPage={setPage} />}
             {page === "analytics" && <AnalyticsPage />}
             {page === "insights"  && <AIInsightsPage />}
-            {["reports","alerts","settings"].includes(page) && (
+            {page === "reports" && <ReportsPage />}
+            {page === "alerts" && <AlertsPage />}
+            {["settings"].includes(page) && (
               <div className="flex items-center justify-center h-64 text-slate-500 text-sm">
                 <div className="text-center">
                   <div className="text-4xl mb-3">🚧</div>
@@ -1064,18 +1526,63 @@ function AppShell({ page, setPage }: { page: string; setPage: (p: string) => voi
 export default function App() {
   const [page, setPage] = useState("landing");
   const isApp = page !== "landing";
+  const [data, setData] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentEventId, setCurrentEventId] = useState<string>("1");
+
+  const refreshData = () => setRefreshKey(k => k + 1);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [
+          timelineDataRes, categoryDataRes, barDataRes, recentExpensesRes,
+          aiInsightsRes, forecastsRes, featuresRes, plansRes, eventsRes
+        ] = await Promise.all([
+          fetch("http://localhost:3001/timelineData").then(r => r.json()),
+          fetch("http://localhost:3001/categoryData").then(r => r.json()),
+          fetch("http://localhost:3001/barData").then(r => r.json()),
+          fetch("http://localhost:3001/recentExpenses").then(r => r.json()),
+          fetch("http://localhost:3001/aiInsights").then(r => r.json()),
+          fetch("http://localhost:3001/forecasts").then(r => r.json()),
+          fetch("http://localhost:3001/features").then(r => r.json()),
+          fetch("http://localhost:3001/plans").then(r => r.json()),
+          fetch("http://localhost:3001/events").then(r => r.json())
+        ]);
+        setData({
+          timelineData: timelineDataRes,
+          categoryData: categoryDataRes,
+          barData: barDataRes,
+          recentExpenses: recentExpensesRes,
+          aiInsights: aiInsightsRes,
+          forecasts: forecastsRes,
+          features: featuresRes,
+          plans: plansRes,
+          events: eventsRes,
+          refreshData: refreshData
+        });
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      }
+    }
+    loadData();
+  }, [refreshKey]);
+
+  if (!data) return <div className="min-h-screen bg-[#050816] flex items-center justify-center text-white text-xl">Loading Data...</div>;
 
   return (
-    <div className="min-h-screen relative" style={{ background: "#050816" }}>
-      <style>{STYLES}</style>
-      <AuroraBg />
-      <div className="relative z-10">
-        <Navbar page={page} setPage={setPage} />
-        {isApp
-          ? <AppShell page={page} setPage={setPage} />
-          : <LandingPage setPage={setPage} />
-        }
+    <DataContext.Provider value={{ ...data, currentEventId, setCurrentEventId }}>
+      <div className="min-h-screen relative" style={{ background: "#050816" }}>
+        <style>{STYLES}</style>
+        <AuroraBg />
+        <div className="relative z-10">
+          <Navbar page={page} setPage={setPage} />
+          {isApp
+            ? <AppShell page={page} setPage={setPage} />
+            : <LandingPage setPage={setPage} />
+          }
+        </div>
       </div>
-    </div>
+    </DataContext.Provider>
   );
 }

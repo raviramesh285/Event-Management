@@ -1,0 +1,376 @@
+{
+  "events": [
+    {
+      "id": "1",
+      "name": "Annual Gala 2025",
+      "budget": 485000
+    },
+    {
+      "id": "1kpdD15QENo",
+      "name": "sathish marriage",
+      "budget": 100000
+    }
+  ],
+  "timelineData": [
+    {
+      "id": "1",
+      "month": "Jan",
+      "actual": 42000,
+      "budget": 50000,
+      "forecast": 45000
+    },
+    {
+      "id": "2",
+      "month": "Feb",
+      "actual": 38000,
+      "budget": 50000,
+      "forecast": 42000
+    },
+    {
+      "id": "3",
+      "month": "Mar",
+      "actual": 55000,
+      "budget": 60000,
+      "forecast": 52000
+    },
+    {
+      "id": "4",
+      "month": "Apr",
+      "actual": 48000,
+      "budget": 55000,
+      "forecast": 50000
+    },
+    {
+      "id": "5",
+      "month": "May",
+      "actual": 62000,
+      "budget": 65000,
+      "forecast": 58000
+    },
+    {
+      "id": "6",
+      "month": "Jun",
+      "actual": 71000,
+      "budget": 70000,
+      "forecast": 68000
+    },
+    {
+      "id": "7",
+      "month": "Jul",
+      "actual": 58000,
+      "budget": 75000,
+      "forecast": 65000
+    }
+  ],
+  "categoryData": [
+    {
+      "id": "1",
+      "name": "Catering",
+      "value": 32,
+      "color": "#3B82F6",
+      "amount": 124000
+    },
+    {
+      "id": "2",
+      "name": "Venue",
+      "value": 25,
+      "color": "#8B5CF6",
+      "amount": 97000
+    },
+    {
+      "id": "3",
+      "name": "Entertainment",
+      "value": 18,
+      "color": "#22D3EE",
+      "amount": 70000
+    },
+    {
+      "id": "4",
+      "name": "Logistics",
+      "value": 15,
+      "color": "#10B981",
+      "amount": 58000
+    },
+    {
+      "id": "5",
+      "name": "Marketing",
+      "value": 10,
+      "color": "#F59E0B",
+      "amount": 39000
+    }
+  ],
+  "barData": [
+    {
+      "id": "1",
+      "cat": "Catering",
+      "spent": 124000,
+      "budget": 150000
+    },
+    {
+      "id": "2",
+      "cat": "Venue",
+      "spent": 97000,
+      "budget": 100000
+    },
+    {
+      "id": "3",
+      "cat": "Entertainment",
+      "spent": 70000,
+      "budget": 80000
+    },
+    {
+      "id": "4",
+      "cat": "Logistics",
+      "spent": 58000,
+      "budget": 65000
+    },
+    {
+      "id": "5",
+      "cat": "Marketing",
+      "spent": 39000,
+      "budget": 50000
+    }
+  ],
+  "recentExpenses": [
+    {
+      "id": "1",
+      "title": "Grand Ballroom Booking",
+      "cat": "Venue",
+      "amount": 45000,
+      "status": "paid",
+      "date": "Jul 8",
+      "emoji": "🏛️"
+    },
+    {
+      "id": "2",
+      "title": "Premium Catering Package",
+      "cat": "Catering",
+      "amount": 28500,
+      "status": "pending",
+      "date": "Jul 7",
+      "emoji": "🍽️"
+    },
+    {
+      "title": "Live Band Performance",
+      "cat": "Entertainment",
+      "amount": 19000,
+      "status": "paid",
+      "date": "Jul 6",
+      "emoji": "🎵",
+      "eventId": "1",
+      "id": "3"
+    },
+    {
+      "id": "4",
+      "title": "Event Photography",
+      "cat": "Media",
+      "amount": 12000,
+      "status": "paid",
+      "date": "Jul 5",
+      "emoji": "📸"
+    },
+    {
+      "id": "5",
+      "title": "Transport & Logistics",
+      "cat": "Logistics",
+      "amount": 8500,
+      "status": "overdue",
+      "date": "Jul 4",
+      "emoji": "🚌"
+    },
+    {
+      "id": "O_A8H9gXXzI",
+      "title": "flower",
+      "cat": "Venue",
+      "amount": 5000,
+      "status": "paid",
+      "date": "Jul 14",
+      "emoji": "📝",
+      "eventId": "1kpdD15QENo"
+    },
+    {
+      "id": "4XV7_0i5270",
+      "title": "food",
+      "cat": "Catering",
+      "amount": 10000,
+      "status": "paid",
+      "date": "Jul 14",
+      "emoji": "📝",
+      "eventId": "1kpdD15QENo"
+    },
+    {
+      "title": "Grand Ballroom Booking",
+      "cat": "Venue",
+      "amount": 50000,
+      "status": "paid",
+      "date": "Jul 14",
+      "emoji": "📝",
+      "eventId": "1",
+      "id": "_IqAuQiXfOg"
+    },
+    {
+      "title": "food",
+      "cat": "Venue",
+      "amount": 40000,
+      "status": "paid",
+      "date": "Jul 14",
+      "emoji": "📝",
+      "eventId": "1",
+      "id": "WRow4u6cclI"
+    }
+  ],
+  "aiInsights": [
+    {
+      "id": "1",
+      "type": "warning",
+      "emoji": "⚡",
+      "title": "Catering budget exceeded by ₹12,500",
+      "sub": "Consider renegotiating with vendors"
+    },
+    {
+      "id": "2",
+      "type": "info",
+      "emoji": "📈",
+      "title": "Entertainment costs up 18% vs last month",
+      "sub": "Q3 trend analysis available"
+    },
+    {
+      "id": "3",
+      "type": "success",
+      "emoji": "🎯",
+      "title": "Budget utilization at 83%",
+      "sub": "On track for Q3 targets"
+    },
+    {
+      "id": "4",
+      "type": "warning",
+      "emoji": "💡",
+      "title": "3 payments pending in 5 days",
+      "sub": "₹38,500 total due soon"
+    }
+  ],
+  "forecasts": [
+    {
+      "id": "1",
+      "cat": "Catering",
+      "current": 124000,
+      "predicted": 158000,
+      "risk": "high"
+    },
+    {
+      "id": "2",
+      "cat": "Venue",
+      "current": 97000,
+      "predicted": 101000,
+      "risk": "low"
+    },
+    {
+      "id": "3",
+      "cat": "Entertainment",
+      "current": 70000,
+      "predicted": 88000,
+      "risk": "medium"
+    },
+    {
+      "id": "4",
+      "cat": "Logistics",
+      "current": 58000,
+      "predicted": 62000,
+      "risk": "low"
+    }
+  ],
+  "features": [
+    {
+      "id": "1",
+      "iconName": "Brain",
+      "title": "AI-Powered Insights",
+      "desc": "Predictive analytics flag overruns before they happen — days in advance.",
+      "color": "#8B5CF6"
+    },
+    {
+      "id": "2",
+      "iconName": "TrendingUp",
+      "title": "Real-time Analytics",
+      "desc": "Live expense tracking with interactive dashboards that update instantly.",
+      "color": "#3B82F6"
+    },
+    {
+      "id": "3",
+      "iconName": "Shield",
+      "title": "Smart Budgeting",
+      "desc": "Category-level budgets with threshold alerts so you are never caught off guard.",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "4",
+      "iconName": "FileText",
+      "title": "Board-ready Reports",
+      "desc": "Generate stunning PDF summaries with one click — no design skills required.",
+      "color": "#10B981"
+    },
+    {
+      "id": "5",
+      "iconName": "Globe",
+      "title": "Multi-currency",
+      "desc": "International events covered with real-time FX rates baked into every figure.",
+      "color": "#F59E0B"
+    },
+    {
+      "id": "6",
+      "iconName": "Layers",
+      "title": "Team Collaboration",
+      "desc": "Role-based access for organizers, finance leads, and executive stakeholders.",
+      "color": "#EC4899"
+    }
+  ],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Starter",
+      "price": "₹999",
+      "period": "/mo",
+      "desc": "College events & small gatherings",
+      "color": "#3B82F6",
+      "popular": false,
+      "perks": [
+        "5 events/month",
+        "Core analytics",
+        "PDF reports",
+        "Email support"
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Pro",
+      "price": "₹2,999",
+      "period": "/mo",
+      "desc": "Professional event managers",
+      "color": "#8B5CF6",
+      "popular": true,
+      "perks": [
+        "Unlimited events",
+        "AI insights",
+        "Advanced analytics",
+        "Priority support",
+        "5 team seats"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Enterprise",
+      "price": "Custom",
+      "period": "",
+      "desc": "Large orgs & corporate teams",
+      "color": "#22D3EE",
+      "popular": false,
+      "perks": [
+        "Everything in Pro",
+        "Custom integrations",
+        "Dedicated manager",
+        "99.9% SLA",
+        "Unlimited seats"
+      ]
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
