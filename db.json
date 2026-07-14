@@ -1,4 +1,38 @@
 {
+  "users": [
+    {
+      "id": "u-admin",
+      "name": "Ankit Kumar",
+      "email": "admin@expensevision.ai",
+      "password": "password123",
+      "role": "Admin",
+      "created_at": "2026-01-01"
+    },
+    {
+      "id": "u-org",
+      "name": "Devendra Patil",
+      "email": "organizer@expensevision.ai",
+      "password": "password123",
+      "role": "Event Organizer",
+      "created_at": "2026-01-05"
+    },
+    {
+      "id": "u-p1",
+      "name": "Rahul Sharma",
+      "email": "rahul@gmail.com",
+      "password": "password123",
+      "role": "Participant",
+      "created_at": "2026-02-10"
+    },
+    {
+      "id": "gE6uAusSdT8",
+      "name": "hari",
+      "email": "hari@gmail.com",
+      "password": "hari123",
+      "role": "Admin",
+      "created_at": "2026-07-14"
+    }
+  ],
   "events": [
     {
       "id": "1",

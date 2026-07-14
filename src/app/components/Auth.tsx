@@ -40,14 +40,14 @@ export default function Auth({ setPage }: AuthProps) {
           setError("Please fill out all fields.");
           return;
         }
-        await login(email);
+        await login(email, password);
         setPage("dashboard");
       } else {
         if (!name || !email || !password) {
           setError("Please fill out all fields.");
           return;
         }
-        await register(name, email, role);
+        await register(name, email, password, role);
         setPage("dashboard");
       }
     } catch (err: any) {

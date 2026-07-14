@@ -11,8 +11,8 @@ interface AppContextType {
   payments: Payment[];
   notifications: SystemNotification[];
   settings: AppSettings;
-  login: (email: string, role?: UserRole) => Promise<User>;
-  register: (name: string, email: string, role: UserRole) => Promise<User>;
+  login: (email: string, password?: string, role?: UserRole) => Promise<User>;
+  register: (name: string, email: string, password?: string, role?: UserRole) => Promise<User>;
   logout: () => void;
   createEvent: (eventData: Omit<Event, "id" | "organizer_id">) => void;
   updateEvent: (event: Event) => void;
@@ -270,54 +270,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [settings]);
 
   // Auth Operations
-  const login = async (email: string, role?: UserRole): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!user && role) {
-          // If role is supplied, auto-register for easy demo logins
-          const newUser: User = {
+  const login = async (email: string, password?: string, role?: UserRole): Promise<User> => {
+    try {
+      // Direct demo login fallback if just providing role without password
+      if (!password && role) {
+         const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
+         const data = await res.json();
+         if (data.length > 0) {
+            setCurrentUser(data[0]);
+            return data[0];
+         }
+         // Auto-register demo user if not found
+         const newUser = {
             id: `u-${Math.random().toString(36).substr(2, 9)}`,
             name: email.split("@")[0].toUpperCase(),
             email,
+            password: "demo",
             role,
             created_at: new Date().toISOString().split("T")[0]
-          };
-          setUsers(prev => [...prev, newUser]);
-          setCurrentUser(newUser);
-          resolve(newUser);
-          return;
-        }
-        if (user) {
-          setCurrentUser(user);
-          resolve(user);
-        } else {
-          reject(new Error("User not found. Use registration or Demo login first."));
-        }
-      }, 500);
-    });
+         };
+         const createRes = await fetch("http://localhost:3001/users", {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify(newUser)
+         });
+         const createdUser = await createRes.json();
+         setCurrentUser(createdUser);
+         setUsers(prev => [...prev, createdUser]);
+         return createdUser;
+      }
+
+      // Real login with password
+      const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      
+      if (data.length === 0) {
+        throw new Error("User not found. Use registration or Demo login first.");
+      }
+      
+      const user = data[0];
+      
+      // Simple plain-text check for our mock environment
+      if (user.password !== password && password !== undefined) {
+        throw new Error("Invalid password.");
+      }
+
+      setCurrentUser(user);
+      return user;
+    } catch (err: any) {
+      throw err;
+    }
   };
 
-  const register = async (name: string, email: string, role: UserRole): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const exist = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (exist) {
-          reject(new Error("Email already registered. Please login."));
-          return;
-        }
-        const newUser: User = {
-          id: `u-${Math.random().toString(36).substr(2, 9)}`,
-          name,
-          email,
-          role,
-          created_at: new Date().toISOString().split("T")[0]
-        };
-        setUsers(prev => [...prev, newUser]);
-        setCurrentUser(newUser);
-        resolve(newUser);
-      }, 500);
-    });
+  const register = async (name: string, email: string, password?: string, role?: UserRole): Promise<User> => {
+    try {
+      const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      
+      if (data.length > 0) {
+        throw new Error("Email already registered. Please login.");
+      }
+
+      const newUser = {
+        id: `u-${Math.random().toString(36).substr(2, 9)}`,
+        name,
+        email,
+        password: password || "default",
+        role: role || "Participant",
+        created_at: new Date().toISOString().split("T")[0]
+      };
+
+      const createRes = await fetch("http://localhost:3001/users", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(newUser)
+      });
+      const createdUser = await createRes.json();
+      setCurrentUser(createdUser);
+      setUsers(prev => [...prev, createdUser]);
+      return createdUser;
+    } catch (err: any) {
+      throw err;
+    }
   };
 
   const logout = () => {
