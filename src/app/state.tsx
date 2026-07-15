@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, Event, Participant, Expense, Vendor, Payment, SystemNotification, AppSettings, UserRole } from "./types";
+import { User, Event, SubEvent, Participant, Expense, Vendor, Payment, SystemNotification, AppSettings, UserRole } from "./types";
 
 interface AppContextType {
   currentUser: User | null;
   users: User[];
   events: Event[];
+  subEvents: SubEvent[];
   participants: Participant[];
   expenses: Expense[];
   vendors: Vendor[];
@@ -18,6 +19,10 @@ interface AppContextType {
   updateEvent: (event: Event) => void;
   deleteEvent: (eventId: string) => void;
   archiveEvent: (eventId: string) => void;
+  unarchiveEvent: (eventId: string) => void;
+  addSubEvent: (subEventData: Omit<SubEvent, "id">) => void;
+  updateSubEvent: (subEvent: SubEvent) => void;
+  deleteSubEvent: (subEventId: string) => void;
   addParticipantToEvent: (eventId: string, userId: string) => void;
   removeParticipantFromEvent: (eventId: string, userId: string) => void;
   addExpense: (expenseData: Omit<Expense, "id" | "created_by">) => void;
@@ -78,6 +83,27 @@ const INITIAL_EVENTS: Event[] = [
     category: "Wedding",
     status: "active",
     organizer_id: "u-admin"
+  }
+];
+
+const INITIAL_SUB_EVENTS: SubEvent[] = [
+  {
+    id: "se-1",
+    event_id: "e-wedding",
+    title: "Sangeet Ceremony",
+    description: "Evening filled with dance and music performances.",
+    date: "2026-11-03",
+    time: "19:00",
+    status: "pending"
+  },
+  {
+    id: "se-2",
+    event_id: "e-gala",
+    title: "CEO Keynote Speech",
+    description: "Annual address by the CEO regarding company's future vision.",
+    date: "2026-08-15",
+    time: "20:00",
+    status: "pending"
   }
 ];
 
@@ -196,6 +222,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return s ? JSON.parse(s) : INITIAL_EVENTS;
   });
 
+  const [subEvents, setSubEvents] = useState<SubEvent[]>(() => {
+    const s = localStorage.getItem("ev_sub_events");
+    return s ? JSON.parse(s) : INITIAL_SUB_EVENTS;
+  });
+
   const [participants, setParticipants] = useState<Participant[]>(() => {
     const s = localStorage.getItem("ev_participants");
     return s ? JSON.parse(s) : INITIAL_PARTICIPANTS;
@@ -238,6 +269,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem("ev_events", JSON.stringify(events));
   }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem("ev_sub_events", JSON.stringify(subEvents));
+  }, [subEvents]);
 
   useEffect(() => {
     localStorage.setItem("ev_participants", JSON.stringify(participants));
@@ -428,6 +463,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const archiveEvent = (eventId: string) => {
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: "archived" as const } : e));
+  };
+
+  const unarchiveEvent = (eventId: string) => {
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: "active" as const } : e));
+  };
+
+  // SubEvent Operations
+  const addSubEvent = (subEventData: Omit<SubEvent, "id">) => {
+    const newSubEvent: SubEvent = {
+      ...subEventData,
+      id: `se-${Math.random().toString(36).substr(2, 9)}`
+    };
+    setSubEvents(prev => [...prev, newSubEvent]);
+  };
+
+  const updateSubEvent = (updated: SubEvent) => {
+    setSubEvents(prev => prev.map(se => se.id === updated.id ? updated : se));
+  };
+
+  const deleteSubEvent = (subEventId: string) => {
+    setSubEvents(prev => prev.filter(se => se.id !== subEventId));
   };
 
   // Participants Operations
@@ -623,6 +679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         users,
         events,
+        subEvents,
         participants,
         expenses,
         vendors,
@@ -636,6 +693,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateEvent,
         deleteEvent,
         archiveEvent,
+        unarchiveEvent,
+        addSubEvent,
+        updateSubEvent,
+        deleteSubEvent,
         addParticipantToEvent,
         removeParticipantFromEvent,
         addExpense,

@@ -31,6 +31,14 @@
       "password": "hari123",
       "role": "Admin",
       "created_at": "2026-07-14"
+    },
+    {
+      "id": "zEmTe_44ylc",
+      "name": "Meera",
+      "email": "meera@example.com",
+      "password": "password",
+      "role": "Event Organizer",
+      "created_at": "2026-07-15"
     }
   ],
   "events": [

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useApp } from "../state";
 import { Event, User } from "../types";
-import { Plus, Trash, Archive, Calendar, MapPin, Tag, Edit3, Users, X, Check, Copy } from "lucide-react";
+import { Plus, Trash, Archive, ArchiveRestore, Calendar, MapPin, Tag, Edit3, Users, X, Check, Copy } from "lucide-react";
+import EventDetails from "./EventDetails";
 
 export default function EventManagement() {
-  const { events, users, participants, createEvent, updateEvent, deleteEvent, archiveEvent, addParticipantToEvent, removeParticipantFromEvent, settings } = useApp();
+  const { events, users, participants, createEvent, updateEvent, deleteEvent, archiveEvent, unarchiveEvent, addParticipantToEvent, removeParticipantFromEvent, settings } = useApp();
   const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   
   // Dialog controls
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -100,6 +102,10 @@ export default function EventManagement() {
     setSelectedUserId("");
   };
 
+  if (selectedEventId) {
+    return <EventDetails eventId={selectedEventId} onBack={() => setSelectedEventId(null)} />;
+  }
+
   return (
     <div className="space-y-6 text-slate-300">
       
@@ -148,22 +154,27 @@ export default function EventManagement() {
           filteredEvents.map(ev => {
             const parts = getEventParticipants(ev.id);
             return (
-              <div key={ev.id} className="glass rounded-3xl p-5 border border-white/5 flex flex-col justify-between group relative hover:border-white/10 transition-all">
+              <div key={ev.id} onClick={() => setSelectedEventId(ev.id)} className="glass rounded-3xl p-5 border border-white/5 flex flex-col justify-between group relative hover:border-white/10 hover:shadow-xl transition-all cursor-pointer">
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-blue-300 bg-blue-500/10 border border-blue-500/20">
                       {ev.category}
                     </span>
                     <div className="flex gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => triggerEdit(ev)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer">
+                      <button onClick={(e) => { e.stopPropagation(); triggerEdit(ev); }} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer">
                         <Edit3 size={12} />
                       </button>
                       {ev.status === "active" && (
-                        <button onClick={() => archiveEvent(ev.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-400/5 transition-all cursor-pointer" title="Archive">
+                        <button onClick={(e) => { e.stopPropagation(); archiveEvent(ev.id); }} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-400/5 transition-all cursor-pointer" title="Archive">
                           <Archive size={12} />
                         </button>
                       )}
-                      <button onClick={() => deleteEvent(ev.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/5 transition-all cursor-pointer" title="Delete">
+                      {ev.status === "archived" && (
+                        <button onClick={(e) => { e.stopPropagation(); unarchiveEvent(ev.id); }} className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/5 transition-all cursor-pointer" title="Restore to Active">
+                          <ArchiveRestore size={12} />
+                        </button>
+                      )}
+                      <button onClick={(e) => { e.stopPropagation(); deleteEvent(ev.id); }} className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/5 transition-all cursor-pointer" title="Delete">
                         <Trash size={12} />
                       </button>
                     </div>
@@ -190,15 +201,15 @@ export default function EventManagement() {
 
                 <div className="border-t border-white/5 pt-4 flex items-center justify-between">
                   <button
-                    onClick={() => setManagingEventId(ev.id)}
+                    onClick={(e) => { e.stopPropagation(); setManagingEventId(ev.id); }}
                     className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                   >
                     <Users size={12} />
                     <span>{parts.length} Participants</span>
                   </button>
                   <button
-                    onClick={() => handleCopyCode(ev.id)}
-                    className="flex items-center gap-1 text-[9px] font-mono text-slate-500 hover:text-slate-300 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleCopyCode(ev.id); }}
+                    className="flex items-center gap-1 text-[9px] font-mono text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                   >
                     {copiedCode === ev.id ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
                     <span>{copiedCode === ev.id ? "Copied" : "Join Code"}</span>

@@ -21,6 +21,16 @@ export interface Event {
   organizer_id: string;
 }
 
+export interface SubEvent {
+  id: string;
+  event_id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  status: "pending" | "completed";
+}
+
 export interface Participant {
   id: string;
   event_id: string;
