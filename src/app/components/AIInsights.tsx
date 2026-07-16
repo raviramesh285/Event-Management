@@ -1,122 +1,90 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../state";
 import { motion, AnimatePresence } from "motion/react";
-import { Brain, TrendingUp, AlertTriangle, Lightbulb, ChevronRight, CheckCircle } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, Lightbulb, Activity, Target } from "lucide-react";
+import { Department, Expense } from "../types";
 
 export default function AIInsights() {
-  const { expenses, events, settings } = useApp();
-  const [selectedEventId, setSelectedEventId] = useState(() => events[0]?.id || "");
+  const { expenses, events, departments, currentUser, settings } = useApp();
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisText, setAnalysisText] = useState("");
 
-  const currentEvent = events.find(e => e.id === selectedEventId);
-  const activeEvents = events.filter(e => e.status === "active");
+  const myEvents = currentUser?.role === "Event Manager" 
+    ? events.filter(e => e.event_manager_id === currentUser.id)
+    : events;
 
-  const currentExpenses = expenses.filter(ex => ex.event_id === selectedEventId);
-  const totalSpent = currentExpenses.reduce((sum, ex) => sum + ex.amount, 0);
-  const totalBudget = currentEvent ? currentEvent.budget : 0;
-  const usagePct = totalBudget > 0 ? totalSpent / totalBudget : 0;
+  const activeEvent = myEvents[0];
+  const eventDepts = departments.filter(d => d.event_id === activeEvent?.id);
+  const eventExps = expenses.filter(e => e.event_id === activeEvent?.id && ["Approved", "Paid", "Closed"].includes(e.status));
+  const pendingExps = expenses.filter(e => e.event_id === activeEvent?.id && ["Submitted", "Pending Approval"].includes(e.status));
 
-  // Run a quick mock AI analysis
+  const totalSpent = eventExps.reduce((s, e) => s + e.amount, 0);
+  const totalPending = pendingExps.reduce((s, e) => s + e.amount, 0);
+  const totalBudget = activeEvent?.budget || 0;
+
   useEffect(() => {
-    if (!currentEvent) return;
+    if (!activeEvent) return;
     setAnalyzing(true);
     setAnalysisText("");
 
     const t = setTimeout(() => {
       let advice = "";
+      const projectedFinal = totalSpent + totalPending + (totalBudget * 0.12); // AI Mock calculation
+      const usagePct = totalBudget > 0 ? projectedFinal / totalBudget : 0;
+
+      // Generate natural language insight
+      const overrunDept = eventDepts.find(d => {
+        const dSpent = eventExps.filter(e => e.department_id === d.id).reduce((s, e) => s + e.amount, 0);
+        return d.budget > 0 && (dSpent / d.budget) > 0.9;
+      });
+
+      const underRunDept = eventDepts.find(d => {
+        const dSpent = eventExps.filter(e => e.department_id === d.id).reduce((s, e) => s + e.amount, 0);
+        return d.budget > 0 && (dSpent / d.budget) < 0.2;
+      });
+
       if (usagePct > 1.0) {
-        advice = `CRITICAL: Your spending is at ${Math.round(usagePct * 100)}% of the budget. Catering is the primary cost driver. I recommend negotiating a custom split with participants or review transportation agreements to reduce overhead by up to 15%.`;
-      } else if (usagePct > 0.8) {
-        advice = `WARNING: Spends have hit ${Math.round(usagePct * 100)}%. Linear forecasts show Catering will overrun by ₹12,500. Secure venue reservations immediately to freeze rental rates before seasonal fee increases.`;
+        advice = `CRITICAL ALERT: Forecasted final cost (${settings.currency}${projectedFinal.toLocaleString()}) exceeds the total event budget. High-risk anomaly detected: Expense run-rate is 22% higher than expected. Immediate freeze on non-essential approvals recommended.`;
+      } else if (usagePct > 0.9) {
+        advice = `WARNING: Projected spend is at ${Math.round(usagePct * 100)}%. ${overrunDept ? `${overrunDept.name} department has already used ${Math.round((eventExps.filter(e => e.department_id === overrunDept.id).reduce((s, e) => s + e.amount, 0) / overrunDept.budget)*100)}% of its budget. ` : ''}Recommend reallocating funds to cover expected overages in upcoming weeks.`;
       } else {
-        advice = `BUDGET SAFE: Spend rate is stable at ${Math.round(usagePct * 100)}%. My predictive engine shows low risk of exceeding the limit. Maintain this spend pattern to preserve a 10% surplus margin at closing.`;
+        advice = `BUDGET SAFE: Spend trajectory is stable. Projected final cost is ${settings.currency}${projectedFinal.toLocaleString()}. ${underRunDept ? `${underRunDept.name} department is spending significantly below expected.` : 'Department performance scores are above 85% average.'}`;
       }
+
       setAnalysisText(advice);
       setAnalyzing(false);
-    }, 1200);
+    }, 1500);
 
     return () => clearTimeout(t);
-  }, [selectedEventId, totalSpent]);
+  }, [activeEvent, totalSpent, totalPending, totalBudget]);
 
-  // Generate category specific forecasts
-  const categoriesList = ["Food", "Travel", "Decoration", "Venue", "Photography", "Entertainment", "Miscellaneous"];
-  const forecasts = categoriesList.map(cat => {
-    const allocatedBudget = Math.round(totalBudget * (cat === "Food" ? 0.3 : cat === "Venue" ? 0.25 : cat === "Entertainment" ? 0.15 : 0.06));
-    const catSpent = currentExpenses.filter(ex => ex.category === cat).reduce((sum, ex) => sum + ex.amount, 0);
-    
-    // Extrapolate a predicted cost
-    const overrunFactor = catSpent > allocatedBudget ? 1.25 : catSpent > 0.7 * allocatedBudget ? 1.05 : 0.95;
-    const predicted = Math.round(catSpent > 0 ? catSpent * overrunFactor : allocatedBudget * 0.9);
-    
-    let risk: "high" | "medium" | "low" = "low";
-    if (catSpent > allocatedBudget) risk = "high";
-    else if (catSpent > 0.85 * allocatedBudget) risk = "medium";
+  const fmt = (n: number) => settings.currency + n.toLocaleString("en-IN");
 
-    return {
-      cat,
-      current: catSpent,
-      predicted,
-      allocated: allocatedBudget,
-      risk
-    };
-  });
-
-  const getRiskColor = (r: string) => {
-    if (r === "high") return "text-red-400 border-red-500/25 bg-red-500/5";
-    if (r === "medium") return "text-amber-400 border-amber-500/25 bg-amber-500/5";
-    return "text-emerald-400 border-emerald-500/25 bg-emerald-500/5";
-  };
-
-  const getRiskIndicatorColor = (r: string) => {
-    if (r === "high") return "#FF4D6D";
-    if (r === "medium") return "#FFC107";
-    return "#00E676";
-  };
+  if (!activeEvent) return <div className="p-6 text-slate-400">No events available for analysis.</div>;
 
   return (
     <div className="space-y-6 text-slate-300 text-left">
-      
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">AI Forecasting & Insights</h2>
-          <p className="text-slate-400 text-xs mt-1">Predictive budgets, risk analysis, and smart cost-saving suggestions.</p>
-        </div>
-        
-        {/* Event selector */}
-        {activeEvents.length > 0 && (
-          <select
-            value={selectedEventId}
-            onChange={e => setSelectedEventId(e.target.value)}
-            className="bg-slate-900 border border-white/5 rounded-xl py-2 px-3 text-xs text-slate-300 cursor-pointer"
-          >
-            {activeEvents.map(e => (
-              <option key={e.id} value={e.id}>{e.title}</option>
-            ))}
-          </select>
-        )}
+      <div>
+        <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <Brain size={24} className="text-purple-400" /> AI Financial Intelligence
+        </h2>
+        <p className="text-slate-400 text-xs mt-1">Predictive cost modeling, anomaly detection, and smart budget recommendations.</p>
       </div>
 
-      {/* Interactive AI Chat Analysis Panel */}
       <div className="glass rounded-3xl p-6 border border-white/5 flex gap-4 relative overflow-hidden" style={{ borderColor: "rgba(139,92,246,0.25)" }}>
         <div className="absolute inset-0 bg-radial-gradient from-purple-500/5 to-transparent pointer-events-none" />
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
           <Brain size={20} className="text-white" />
         </div>
-        
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white">ExpenseVision AI Forecast</span>
             <span className="text-[9px] px-2 py-0.5 rounded-full text-purple-300 bg-purple-500/10 border border-purple-500/20 font-bold">GPT-4 PRO</span>
           </div>
-
           <AnimatePresence mode="wait">
             {analyzing ? (
               <motion.div key="loader" className="flex items-center gap-1.5 py-2">
-                {[0, 150, 300].map(d => (
-                  <span key={d} className="w-2.5 h-2.5 rounded-full bg-purple-400" style={{ animation: `pulse-ring 1s ease-out infinite ${d}ms` }} />
-                ))}
+                {[0, 150, 300].map(d => <span key={d} className="w-2.5 h-2.5 rounded-full bg-purple-400" style={{ animation: `pulse-ring 1s ease-out infinite ${d}ms` }} />)}
               </motion.div>
             ) : (
               <motion.p key="advice" className="text-xs text-slate-300 leading-relaxed font-medium">
@@ -127,64 +95,77 @@ export default function AIInsights() {
         </div>
       </div>
 
-      {/* Forecast list */}
-      <div className="glass rounded-3xl p-5 border border-white/5 space-y-4">
-        <div>
-          <h3 className="text-white font-bold text-sm">Predictive Quarterly Allocations</h3>
-          <p className="text-[10px] text-slate-400 mt-0.5">Category-level extrapolation based on current ledger trends.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass rounded-3xl p-6 border border-white/5">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+            <Activity size={16} className="text-amber-400" /> Department Performance Scores
+          </h3>
+          <div className="space-y-4">
+            {eventDepts.map(dept => {
+              const spent = eventExps.filter(e => e.department_id === dept.id).reduce((s, e) => s + e.amount, 0);
+              const pending = pendingExps.filter(e => e.department_id === dept.id).reduce((s, e) => s + e.amount, 0);
+              const projectedDept = spent + pending + (dept.budget * 0.05); // AI Prediction
+              const pct = dept.budget > 0 ? (projectedDept / dept.budget) * 100 : 0;
+              
+              let warning = "";
+              if (pct >= 100) warning = "Critical: Exceeded Budget Limit";
+              else if (pct >= 90) warning = "Warning: 90% Threshold Exceeded";
+              else if (pct >= 80) warning = "Caution: 80% Threshold Reached";
+              
+              const score = Math.max(0, 100 - (pct > 100 ? 50 : pct > 80 ? 20 : 0));
+
+              return (
+                <div key={dept.id} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-bold text-white">{dept.name}</span>
+                    <span className={`text-[10px] font-bold ${score > 80 ? 'text-emerald-400' : 'text-amber-400'}`}>Score: {score}/100</span>
+                  </div>
+                  <div className="w-full bg-slate-800/50 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div className={`h-full rounded-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>{fmt(projectedDept)} projected / {fmt(dept.budget)}</span>
+                    <span className="text-red-400 font-semibold">{warning}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="space-y-3">
-          {forecasts.map((f, i) => (
-            <div key={i} className="flex items-center justify-between gap-4 p-3 rounded-xl hover:bg-white/[0.02] border border-transparent hover:border-white/5 transition-all">
-              <div className="w-24 text-xs font-semibold text-white shrink-0">{f.cat}</div>
-              <div className="flex-1 hidden md:block">
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-1000"
-                    style={{
-                      width: `${Math.min((f.current / (f.allocated || 1)) * 100, 100)}%`,
-                      background: getRiskIndicatorColor(f.risk)
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-[11px] text-slate-400 font-mono">
-                  {settings.currency}{f.current.toLocaleString()} / {settings.currency}{f.predicted.toLocaleString()}
-                </div>
-                <span className={`text-[8px] font-bold uppercase tracking-wider ${getRiskColor(f.risk).split(" ")[0]}`}>
-                  {f.risk} RISK
-                </span>
-              </div>
+        <div className="space-y-6">
+          <div className="glass rounded-3xl p-6 border border-white/5">
+             <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+               <TrendingUp size={16} className="text-blue-400" /> Forecast Final Cost
+             </h3>
+             <div className="flex items-end gap-3 mb-2">
+               <span className="text-3xl font-extrabold text-white">{fmt(totalSpent + totalPending + (totalBudget * 0.12))}</span>
+               <span className="text-xs text-slate-400 mb-1">projected final settlement</span>
+             </div>
+             <p className="text-[10px] text-slate-400">Based on historical burn rates across {eventDepts.length} departments and current pending approvals.</p>
+          </div>
+
+          <div className="p-5 border border-amber-500/20 bg-amber-500/5 rounded-3xl text-left space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+              <AlertTriangle size={16} />
             </div>
-          ))}
+            <h4 className="text-amber-400 font-bold text-xs">Expense Anomaly Detected</h4>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              Recent invoice submissions in the Technical Support department are 45% higher than the historical average for this event category.
+            </p>
+          </div>
+
+          <div className="p-5 border border-emerald-500/20 bg-emerald-500/5 rounded-3xl text-left space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <Lightbulb size={16} />
+            </div>
+            <h4 className="text-emerald-400 font-bold text-xs">Budget Redistribution Recommended</h4>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              Decoration has a surplus trajectory. Shifting ₹15,000 to Catering will stabilize their 90% threshold warning with minimal impact on overall event quality.
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* Suggested optimizations */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-5 border border-white/5 bg-white/[0.01] rounded-3xl text-left space-y-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
-            <AlertTriangle size={16} />
-          </div>
-          <h4 className="text-white font-bold text-xs">Contract Inconsistencies</h4>
-          <p className="text-slate-400 text-[11px] leading-relaxed">
-            Venue reservation is currently logged manually. High risk of rate changes. Secure binding contract to avoid a predicted ₹14,000 hike.
-          </p>
-        </div>
-
-        <div className="p-5 border border-white/5 bg-white/[0.01] rounded-3xl text-left space-y-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-            <Lightbulb size={16} />
-          </div>
-          <h4 className="text-white font-bold text-xs">Cost-Saving Recommendations</h4>
-          <p className="text-slate-400 text-[11px] leading-relaxed">
-            Consolidating DJ audio booking and visual lighting into a single Sound System provider reduces total cost by approximately ₹8,500.
-          </p>
-        </div>
-      </div>
-
     </div>
   );
 }

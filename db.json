@@ -6,413 +6,157 @@
       "email": "admin@expensevision.ai",
       "password": "password123",
       "role": "Admin",
-      "created_at": "2026-01-01"
+      "created_at": "2026-01-01",
+      "status": "active"
     },
     {
-      "id": "u-org",
-      "name": "Devendra Patil",
-      "email": "organizer@expensevision.ai",
+      "id": "u-em1",
+      "name": "John Event",
+      "email": "john@expensevision.ai",
       "password": "password123",
-      "role": "Event Organizer",
-      "created_at": "2026-01-05"
+      "role": "Event Manager",
+      "created_at": "2026-01-05",
+      "status": "active"
     },
     {
-      "id": "u-p1",
-      "name": "Rahul Sharma",
-      "email": "rahul@gmail.com",
+      "id": "u-dm1",
+      "name": "Ravi Cater",
+      "email": "ravi@expensevision.ai",
       "password": "password123",
-      "role": "Participant",
-      "created_at": "2026-02-10"
+      "role": "Department Manager",
+      "created_at": "2026-02-10",
+      "status": "active"
     },
     {
-      "id": "gE6uAusSdT8",
-      "name": "hari",
-      "email": "hari@gmail.com",
-      "password": "hari123",
+      "id": "u-dm2",
+      "name": "Arun Decor",
+      "email": "arun@expensevision.ai",
+      "password": "password123",
+      "role": "Department Manager",
+      "created_at": "2026-02-11",
+      "status": "active"
+    },
+    {
+      "id": "l1BFWQfviU4",
+      "name": "RAVI",
+      "email": "ravi-admin@expensevision.ai",
+      "password": "password123",
       "role": "Admin",
-      "created_at": "2026-07-14"
+      "status": "active",
+      "created_at": "2026-07-16"
     },
     {
-      "id": "zEmTe_44ylc",
-      "name": "Meera",
-      "email": "meera@example.com",
-      "password": "password",
-      "role": "Event Organizer",
-      "created_at": "2026-07-15"
+      "id": "d3JsK9ElNWE",
+      "name": "event ravi",
+      "email": "ravi-em@expensevision.ai",
+      "password": "password123",
+      "role": "Event Manager",
+      "status": "active",
+      "created_at": "2026-07-16"
     }
   ],
   "events": [
     {
-      "id": "1",
-      "name": "Annual Gala 2025",
-      "budget": 485000
+      "id": "e1",
+      "title": "Tech Fest 2026",
+      "description": "Annual technology festival and conference.",
+      "budget": 2500000,
+      "location": "Convention Center",
+      "event_date": "2026-11-15",
+      "category": "Corporate Event",
+      "status": "active",
+      "event_manager_id": "u-em1"
     },
     {
-      "id": "1kpdD15QENo",
-      "name": "sathish marriage",
-      "budget": 100000
+      "title": "ckjvh",
+      "description": "hii",
+      "event_date": "2025-07-12",
+      "location": "bjhvuv",
+      "budget": 6000000,
+      "category": "Education",
+      "status": "active",
+      "created_at": "2026-07-16T08:19:36.863Z",
+      "id": "HI7LDY3eZ3I"
     }
   ],
-  "timelineData": [
+  "departments": [
     {
-      "id": "1",
-      "month": "Jan",
-      "actual": 42000,
-      "budget": 50000,
-      "forecast": 45000
-    },
-    {
-      "id": "2",
-      "month": "Feb",
-      "actual": 38000,
-      "budget": 50000,
-      "forecast": 42000
-    },
-    {
-      "id": "3",
-      "month": "Mar",
-      "actual": 55000,
-      "budget": 60000,
-      "forecast": 52000
-    },
-    {
-      "id": "4",
-      "month": "Apr",
-      "actual": 48000,
-      "budget": 55000,
-      "forecast": 50000
-    },
-    {
-      "id": "5",
-      "month": "May",
-      "actual": 62000,
-      "budget": 65000,
-      "forecast": 58000
-    },
-    {
-      "id": "6",
-      "month": "Jun",
-      "actual": 71000,
-      "budget": 70000,
-      "forecast": 68000
-    },
-    {
-      "id": "7",
-      "month": "Jul",
-      "actual": 58000,
-      "budget": 75000,
-      "forecast": 65000
-    }
-  ],
-  "categoryData": [
-    {
-      "id": "1",
+      "id": "d1",
+      "event_id": "e1",
       "name": "Catering",
-      "value": 32,
-      "color": "#3B82F6",
-      "amount": 124000
+      "budget": 500000,
+      "manager_id": "u-dm1"
     },
     {
-      "id": "2",
-      "name": "Venue",
-      "value": 25,
-      "color": "#8B5CF6",
-      "amount": 97000
+      "id": "d2",
+      "event_id": "e1",
+      "name": "Decoration",
+      "budget": 300000,
+      "manager_id": "u-dm2"
     },
     {
-      "id": "3",
-      "name": "Entertainment",
-      "value": 18,
-      "color": "#22D3EE",
-      "amount": 70000
+      "name": "jbi",
+      "budget": 60000,
+      "manager_id": "kjhgcg",
+      "event_id": "e-pvxjmfcq5",
+      "id": "4IWIWfVBmpI"
     },
     {
-      "id": "4",
-      "name": "Logistics",
-      "value": 15,
-      "color": "#10B981",
-      "amount": 58000
-    },
-    {
-      "id": "5",
-      "name": "Marketing",
-      "value": 10,
-      "color": "#F59E0B",
-      "amount": 39000
+      "name": "food",
+      "budget": 50000,
+      "manager_id": "",
+      "event_id": "HI7LDY3eZ3I",
+      "id": "RhUc4NhQv4I"
     }
   ],
-  "barData": [
+  "expenses": [
     {
-      "id": "1",
-      "cat": "Catering",
-      "spent": 124000,
-      "budget": 150000
-    },
-    {
-      "id": "2",
-      "cat": "Venue",
-      "spent": 97000,
-      "budget": 100000
-    },
-    {
-      "id": "3",
-      "cat": "Entertainment",
-      "spent": 70000,
-      "budget": 80000
-    },
-    {
-      "id": "4",
-      "cat": "Logistics",
-      "spent": 58000,
-      "budget": 65000
-    },
-    {
-      "id": "5",
-      "cat": "Marketing",
-      "spent": 39000,
-      "budget": 50000
-    }
-  ],
-  "recentExpenses": [
-    {
-      "id": "1",
-      "title": "Grand Ballroom Booking",
-      "cat": "Venue",
+      "id": "ex1",
+      "event_id": "e1",
+      "department_id": "d1",
       "amount": 45000,
-      "status": "paid",
-      "date": "Jul 8",
-      "emoji": "🏛️"
+      "category": "Food Materials",
+      "description": "Advance for catering raw materials",
+      "date": "2026-07-15",
+      "status": "Approved",
+      "created_by": "u-dm1"
     },
     {
-      "id": "2",
-      "title": "Premium Catering Package",
-      "cat": "Catering",
-      "amount": 28500,
-      "status": "pending",
-      "date": "Jul 7",
-      "emoji": "🍽️"
-    },
-    {
-      "title": "Live Band Performance",
-      "cat": "Entertainment",
-      "amount": 19000,
-      "status": "paid",
-      "date": "Jul 6",
-      "emoji": "🎵",
-      "eventId": "1",
-      "id": "3"
-    },
-    {
-      "id": "4",
-      "title": "Event Photography",
-      "cat": "Media",
-      "amount": 12000,
-      "status": "paid",
-      "date": "Jul 5",
-      "emoji": "📸"
-    },
-    {
-      "id": "5",
-      "title": "Transport & Logistics",
-      "cat": "Logistics",
-      "amount": 8500,
-      "status": "overdue",
-      "date": "Jul 4",
-      "emoji": "🚌"
-    },
-    {
-      "id": "O_A8H9gXXzI",
-      "title": "flower",
-      "cat": "Venue",
-      "amount": 5000,
-      "status": "paid",
-      "date": "Jul 14",
-      "emoji": "📝",
-      "eventId": "1kpdD15QENo"
-    },
-    {
-      "id": "4XV7_0i5270",
-      "title": "food",
-      "cat": "Catering",
-      "amount": 10000,
-      "status": "paid",
-      "date": "Jul 14",
-      "emoji": "📝",
-      "eventId": "1kpdD15QENo"
-    },
-    {
-      "title": "Grand Ballroom Booking",
-      "cat": "Venue",
-      "amount": 50000,
-      "status": "paid",
-      "date": "Jul 14",
-      "emoji": "📝",
-      "eventId": "1",
-      "id": "_IqAuQiXfOg"
-    },
-    {
-      "title": "food",
-      "cat": "Venue",
-      "amount": 40000,
-      "status": "paid",
-      "date": "Jul 14",
-      "emoji": "📝",
-      "eventId": "1",
-      "id": "WRow4u6cclI"
+      "id": "ex2",
+      "event_id": "e1",
+      "department_id": "d1",
+      "amount": 15000,
+      "category": "Worker Salary",
+      "description": "Staff advance payment",
+      "date": "2026-07-16",
+      "status": "Submitted",
+      "created_by": "u-dm1"
     }
   ],
-  "aiInsights": [
+  "audit_logs": [
     {
-      "id": "1",
-      "type": "warning",
-      "emoji": "⚡",
-      "title": "Catering budget exceeded by ₹12,500",
-      "sub": "Consider renegotiating with vendors"
-    },
+      "id": "al1",
+      "timestamp": "2026-07-14T10:00:00Z",
+      "action": "System Initialized",
+      "user_id": "u-admin",
+      "details": "Enterprise system database initialized with new schema."
+    }
+  ],
+  "notifications": [
     {
-      "id": "2",
+      "id": "n1",
+      "user_id": "u-em1",
+      "message": "You have been assigned as Event Manager for Tech Fest 2026.",
       "type": "info",
-      "emoji": "📈",
-      "title": "Entertainment costs up 18% vs last month",
-      "sub": "Q3 trend analysis available"
-    },
-    {
-      "id": "3",
-      "type": "success",
-      "emoji": "🎯",
-      "title": "Budget utilization at 83%",
-      "sub": "On track for Q3 targets"
-    },
-    {
-      "id": "4",
-      "type": "warning",
-      "emoji": "💡",
-      "title": "3 payments pending in 5 days",
-      "sub": "₹38,500 total due soon"
+      "read": false,
+      "timestamp": "2026-07-14T10:05:00Z"
     }
   ],
-  "forecasts": [
-    {
-      "id": "1",
-      "cat": "Catering",
-      "current": 124000,
-      "predicted": 158000,
-      "risk": "high"
-    },
-    {
-      "id": "2",
-      "cat": "Venue",
-      "current": 97000,
-      "predicted": 101000,
-      "risk": "low"
-    },
-    {
-      "id": "3",
-      "cat": "Entertainment",
-      "current": 70000,
-      "predicted": 88000,
-      "risk": "medium"
-    },
-    {
-      "id": "4",
-      "cat": "Logistics",
-      "current": 58000,
-      "predicted": 62000,
-      "risk": "low"
-    }
-  ],
-  "features": [
-    {
-      "id": "1",
-      "iconName": "Brain",
-      "title": "AI-Powered Insights",
-      "desc": "Predictive analytics flag overruns before they happen — days in advance.",
-      "color": "#8B5CF6"
-    },
-    {
-      "id": "2",
-      "iconName": "TrendingUp",
-      "title": "Real-time Analytics",
-      "desc": "Live expense tracking with interactive dashboards that update instantly.",
-      "color": "#3B82F6"
-    },
-    {
-      "id": "3",
-      "iconName": "Shield",
-      "title": "Smart Budgeting",
-      "desc": "Category-level budgets with threshold alerts so you are never caught off guard.",
-      "color": "#22D3EE"
-    },
-    {
-      "id": "4",
-      "iconName": "FileText",
-      "title": "Board-ready Reports",
-      "desc": "Generate stunning PDF summaries with one click — no design skills required.",
-      "color": "#10B981"
-    },
-    {
-      "id": "5",
-      "iconName": "Globe",
-      "title": "Multi-currency",
-      "desc": "International events covered with real-time FX rates baked into every figure.",
-      "color": "#F59E0B"
-    },
-    {
-      "id": "6",
-      "iconName": "Layers",
-      "title": "Team Collaboration",
-      "desc": "Role-based access for organizers, finance leads, and executive stakeholders.",
-      "color": "#EC4899"
-    }
-  ],
-  "plans": [
-    {
-      "id": "1",
-      "name": "Starter",
-      "price": "₹999",
-      "period": "/mo",
-      "desc": "College events & small gatherings",
-      "color": "#3B82F6",
-      "popular": false,
-      "perks": [
-        "5 events/month",
-        "Core analytics",
-        "PDF reports",
-        "Email support"
-      ]
-    },
-    {
-      "id": "2",
-      "name": "Pro",
-      "price": "₹2,999",
-      "period": "/mo",
-      "desc": "Professional event managers",
-      "color": "#8B5CF6",
-      "popular": true,
-      "perks": [
-        "Unlimited events",
-        "AI insights",
-        "Advanced analytics",
-        "Priority support",
-        "5 team seats"
-      ]
-    },
-    {
-      "id": "3",
-      "name": "Enterprise",
-      "price": "Custom",
-      "period": "",
-      "desc": "Large orgs & corporate teams",
-      "color": "#22D3EE",
-      "popular": false,
-      "perks": [
-        "Everything in Pro",
-        "Custom integrations",
-        "Dedicated manager",
-        "99.9% SLA",
-        "Unlimited seats"
-      ]
-    }
-  ],
+  "settings": {
+    "currency": "₹",
+    "language": "en",
+    "theme": "dark",
+    "approvalLimit": 10000
+  },
   "$schema": "./node_modules/json-server/schema.json"
 }

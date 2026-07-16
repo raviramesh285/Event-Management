@@ -1,12 +1,19 @@
-export type UserRole = "Admin" | "Event Organizer" | "Participant";
-
 export interface User {
   id: string;
   name: string;
   email: string;
   password?: string;
-  role: UserRole;
+  role: "Admin" | "Event Manager" | "Department Manager";
   created_at: string;
+  status: "active" | "disabled";
+}
+
+export interface Department {
+  id: string;
+  event_id: string;
+  name: string;
+  budget: number;
+  manager_id?: string;
 }
 
 export interface Event {
@@ -16,76 +23,44 @@ export interface Event {
   budget: number;
   location: string;
   event_date: string;
-  category: "Wedding" | "Birthday" | "College Event" | "Corporate Event" | "Trip" | "Festival" | "Custom";
+  category: "Wedding" | "Corporate Event" | "Birthday" | "Trip" | "Festival" | "Custom";
   status: "active" | "archived";
-  organizer_id: string;
-}
-
-export interface SubEvent {
-  id: string;
-  event_id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  status: "pending" | "completed";
-}
-
-export interface Participant {
-  id: string;
-  event_id: string;
-  user_id: string;
+  event_manager_id?: string;
 }
 
 export interface Expense {
   id: string;
   event_id: string;
+  department_id: string;
   amount: number;
-  category: "Food" | "Travel" | "Decoration" | "Venue" | "Photography" | "Entertainment" | "Miscellaneous";
+  category: string; // Dynamic now, e.g., Food Materials, Worker Salary, etc.
   description: string;
-  receipt_url?: string;
-  created_by: string;
   date: string;
+  receipt_url?: string;
+  status: "Draft" | "Submitted" | "Pending Approval" | "Approved" | "Paid" | "Closed";
+  created_by: string; // User ID
 }
 
-export interface Vendor {
+export interface AuditLog {
   id: string;
-  event_id: string;
-  vendor_name: string;
-  contact: string;
-  email?: string;
-  amount: number;
-  service_type: "Catering" | "Decoration" | "Photography" | "Sound System" | "Transportation" | "Venue Provider";
-  status: "paid" | "pending";
-  notes?: string;
+  timestamp: string;
+  action: string;
+  user_id: string;
+  details: string;
 }
 
-export interface Payment {
+export interface Notification {
   id: string;
-  event_id: string;
-  participant_id: string;
-  expense_id?: string;
-  amount: number;
-  status: "paid" | "unpaid";
-}
-
-export interface SystemNotification {
-  id: string;
-  title: string;
+  user_id: string;
   message: string;
-  type: "warning" | "info" | "success";
-  created_at: string;
+  type: "info" | "warning" | "success" | "error";
   read: boolean;
+  timestamp: string;
 }
 
-export interface AppSettings {
+export interface Settings {
   currency: string;
-  warningThreshold: number;
-  theme: "light" | "dark";
-}
-
-export interface SplitConfig {
-  expenseId: string;
-  type: "equal" | "percentage" | "custom";
-  shares: { [userId: string]: number };
+  language: string;
+  theme: "dark" | "light";
+  approvalLimit: number;
 }

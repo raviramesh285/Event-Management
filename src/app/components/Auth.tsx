@@ -17,7 +17,7 @@ export default function Auth({ setPage }: AuthProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("Event Organizer");
+  const [role, setRole] = useState<UserRole>("Event Manager");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,22 +103,22 @@ export default function Auth({ setPage }: AuthProps) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
-                onClick={() => handleDemoLogin("admin@expensevision.ai", "Admin")}
+                onClick={() => handleDemoLogin("u-admin", "Admin")}
                 className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 text-[10px] font-bold text-blue-300 cursor-pointer text-center"
               >
                 Log as Admin
               </button>
               <button
-                onClick={() => handleDemoLogin("organizer@expensevision.ai", "Event Organizer")}
+                onClick={() => handleDemoLogin("u-em1", "Event Manager")}
                 className="px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/25 hover:bg-purple-500/20 text-[10px] font-bold text-purple-300 cursor-pointer text-center"
               >
-                Log as Organizer
+                Log as Manager
               </button>
               <button
-                onClick={() => handleDemoLogin("rahul@gmail.com", "Participant")}
+                onClick={() => handleDemoLogin("u-dm1", "Department Manager")}
                 className="px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/25 hover:bg-cyan-500/20 text-[10px] font-bold text-cyan-300 cursor-pointer text-center"
               >
-                Log as Participant
+                Log as Dept Mgr
               </button>
             </div>
           </div>
@@ -164,12 +164,12 @@ export default function Auth({ setPage }: AuthProps) {
 
               {!isForgot && (
                 <div className="space-y-1 text-left">
-                  <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Email Address</label>
+                  <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">User ID or Email</label>
                   <div className="relative">
-                    <Mail size={14} className="absolute left-3.5 top-3.5 text-slate-500" />
+                    <UserIcon size={14} className="absolute left-3.5 top-3.5 text-slate-500" />
                     <input
-                      type="email"
-                      placeholder="e.g. name@domain.com"
+                      type="text"
+                      placeholder="e.g. u-admin or email@domain.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all"
@@ -230,8 +230,8 @@ export default function Auth({ setPage }: AuthProps) {
                     className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 px-4 text-xs text-slate-300 focus:outline-none focus:border-blue-500 transition-all cursor-pointer"
                   >
                     <option value="Admin">Admin</option>
-                    <option value="Event Organizer">Event Organizer</option>
-                    <option value="Participant">Participant</option>
+                    <option value="Event Manager">Event Manager</option>
+                    <option value="Department Manager">Department Manager</option>
                   </select>
                 </div>
               )}

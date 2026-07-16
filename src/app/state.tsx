@@ -1,210 +1,49 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, Event, SubEvent, Participant, Expense, Vendor, Payment, SystemNotification, AppSettings, UserRole } from "./types";
+import { User, Event, Department, Expense, AuditLog, Notification, Settings } from "./types";
 
 interface AppContextType {
   currentUser: User | null;
   users: User[];
   events: Event[];
-  subEvents: SubEvent[];
-  participants: Participant[];
+  departments: Department[];
   expenses: Expense[];
-  vendors: Vendor[];
-  payments: Payment[];
-  notifications: SystemNotification[];
-  settings: AppSettings;
-  login: (email: string, password?: string, role?: UserRole) => Promise<User>;
-  register: (name: string, email: string, password?: string, role?: UserRole) => Promise<User>;
+  auditLogs: AuditLog[];
+  notifications: Notification[];
+  settings: Settings;
+  
+  // Auth
+  login: (userIdOrEmail: string, password?: string) => Promise<User>;
   logout: () => void;
-  createEvent: (eventData: Omit<Event, "id" | "organizer_id">) => void;
+  
+  // Admin & User Mgmt
+  createUser: (userData: Omit<User, "created_at"> & { id?: string }) => void;
+  updateUserStatus: (userId: string, status: "active" | "disabled") => void;
+  updateUserRole: (userId: string, role: User["role"]) => void;
+  
+  // Event Mgmt
+  createEvent: (eventData: Omit<Event, "id">) => void;
   updateEvent: (event: Event) => void;
   deleteEvent: (eventId: string) => void;
-  archiveEvent: (eventId: string) => void;
-  unarchiveEvent: (eventId: string) => void;
-  addSubEvent: (subEventData: Omit<SubEvent, "id">) => void;
-  updateSubEvent: (subEvent: SubEvent) => void;
-  deleteSubEvent: (subEventId: string) => void;
-  addParticipantToEvent: (eventId: string, userId: string) => void;
-  removeParticipantFromEvent: (eventId: string, userId: string) => void;
+  assignEventManager: (eventId: string, managerId: string) => void;
+  
+  // Department Mgmt
+  createDepartment: (deptData: Omit<Department, "id">) => void;
+  updateDepartment: (dept: Department) => void;
+  deleteDepartment: (deptId: string) => void;
+  assignDepartmentManager: (deptId: string, managerId: string) => void;
+  
+  // Expense Mgmt
   addExpense: (expenseData: Omit<Expense, "id" | "created_by">) => void;
+  updateExpenseStatus: (expenseId: string, status: Expense["status"]) => void;
   deleteExpense: (expenseId: string) => void;
-  editExpense: (expense: Expense) => void;
-  addVendor: (vendorData: Omit<Vendor, "id">) => void;
-  editVendor: (vendor: Vendor) => void;
-  deleteVendor: (vendorId: string) => void;
-  updateVendorPayment: (vendorId: string, status: "paid" | "pending") => void;
-  markPaymentStatus: (paymentId: string, status: "paid" | "unpaid") => void;
-  splitExpense: (expenseId: string, type: "equal" | "percentage" | "custom", splits: { [userId: string]: number }) => void;
-  updateSettings: (settings: Partial<AppSettings>) => void;
-  clearNotifications: () => void;
+  
+  // System
+  logAudit: (action: string, details: string) => void;
   markNotificationRead: (id: string) => void;
-  seedAISuggestedPlan: (title: string, budget: number, category: any, location: string, planData: any) => void;
+  updateSettings: (settings: Partial<Settings>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const INITIAL_USERS: User[] = [
-  { id: "u-admin", name: "Ankit Kumar", email: "admin@expensevision.ai", role: "Admin", created_at: "2026-01-01" },
-  { id: "u-org", name: "Devendra Patil", email: "organizer@expensevision.ai", role: "Event Organizer", created_at: "2026-01-05" },
-  { id: "u-p1", name: "Rahul Sharma", email: "rahul@gmail.com", role: "Participant", created_at: "2026-02-10" },
-  { id: "u-p2", name: "Sneha Reddy", email: "sneha@gmail.com", role: "Participant", created_at: "2026-02-12" },
-  { id: "u-p3", name: "Priya Nair", email: "priya@gmail.com", role: "Participant", created_at: "2026-02-15" }
-];
-
-const INITIAL_EVENTS: Event[] = [
-  {
-    id: "e-gala",
-    title: "Annual Gala 2025",
-    description: "The premium annual corporate celebration for employees and stakeholders.",
-    budget: 485000,
-    location: "Grand Ballroom, Marriott Hotels",
-    event_date: "2026-08-15",
-    category: "Corporate Event",
-    status: "active",
-    organizer_id: "u-org"
-  },
-  {
-    id: "e-tech",
-    title: "National TechFest '26",
-    description: "Annual collegiate engineering symposium with hackathons and panel talks.",
-    budget: 300000,
-    location: "Campus Main Auditorium",
-    event_date: "2026-09-20",
-    category: "College Event",
-    status: "active",
-    organizer_id: "u-org"
-  },
-  {
-    id: "e-wedding",
-    title: "Meera's Dream Wedding",
-    description: "Traditional destination wedding ceremony and reception banquet.",
-    budget: 1500000,
-    location: "Royal Palace Resorts, Udaipur",
-    event_date: "2026-11-04",
-    category: "Wedding",
-    status: "active",
-    organizer_id: "u-admin"
-  }
-];
-
-const INITIAL_SUB_EVENTS: SubEvent[] = [
-  {
-    id: "se-1",
-    event_id: "e-wedding",
-    title: "Sangeet Ceremony",
-    description: "Evening filled with dance and music performances.",
-    date: "2026-11-03",
-    time: "19:00",
-    status: "pending"
-  },
-  {
-    id: "se-2",
-    event_id: "e-gala",
-    title: "CEO Keynote Speech",
-    description: "Annual address by the CEO regarding company's future vision.",
-    date: "2026-08-15",
-    time: "20:00",
-    status: "pending"
-  }
-];
-
-const INITIAL_PARTICIPANTS: Participant[] = [
-  { id: "pt-1", event_id: "e-gala", user_id: "u-p1" },
-  { id: "pt-2", event_id: "e-gala", user_id: "u-p2" },
-  { id: "pt-3", event_id: "e-gala", user_id: "u-p3" },
-  { id: "pt-4", event_id: "e-tech", user_id: "u-p1" },
-  { id: "pt-5", event_id: "e-tech", user_id: "u-p2" }
-];
-
-const INITIAL_EXPENSES: Expense[] = [
-  {
-    id: "ex-1",
-    event_id: "e-gala",
-    amount: 150000,
-    category: "Venue",
-    description: "Ballroom rental deposit and setup charges",
-    receipt_url: "receipt_venue.png",
-    created_by: "u-org",
-    date: "2026-07-01"
-  },
-  {
-    id: "ex-2",
-    event_id: "e-gala",
-    amount: 124000,
-    category: "Food",
-    description: "Premium catering buffet package (200 guests)",
-    receipt_url: "receipt_catering.png",
-    created_by: "u-org",
-    date: "2026-07-05"
-  },
-  {
-    id: "ex-3",
-    event_id: "e-gala",
-    amount: 70000,
-    category: "Entertainment",
-    description: "Live band performance and sound engineer cost",
-    receipt_url: "receipt_band.png",
-    created_by: "u-org",
-    date: "2026-07-06"
-  },
-  {
-    id: "ex-4",
-    event_id: "e-gala",
-    amount: 44500,
-    category: "Decoration",
-    description: "Floral stage backdrops and table glow lamps",
-    receipt_url: "receipt_decor.png",
-    created_by: "u-org",
-    date: "2026-07-08"
-  }
-];
-
-const INITIAL_VENDORS: Vendor[] = [
-  {
-    id: "v-catering",
-    event_id: "e-gala",
-    vendor_name: "Gourmet Banquet Catering",
-    contact: "9876543210",
-    email: "events@gourmet banquet.com",
-    amount: 150000,
-    service_type: "Catering",
-    status: "pending",
-    notes: "Requires final count update 5 days before event"
-  },
-  {
-    id: "v-venue",
-    event_id: "e-gala",
-    vendor_name: "Marriott Grand Banquets",
-    contact: "8765432109",
-    email: "bookings@marriott.com",
-    amount: 250000,
-    service_type: "Venue Provider",
-    status: "paid",
-    notes: "Deposit paid. Remainder due on check-in."
-  },
-  {
-    id: "v-photog",
-    event_id: "e-gala",
-    vendor_name: "Infinity Photo & Cinema",
-    contact: "7654321098",
-    email: "contact@infinityphoto.com",
-    amount: 60000,
-    service_type: "Photography",
-    status: "pending",
-    notes: "Includes 2 photographers and cinematic drone setup"
-  }
-];
-
-const INITIAL_PAYMENTS: Payment[] = [
-  { id: "pay-1", event_id: "e-gala", participant_id: "u-p1", amount: 15000, status: "paid" },
-  { id: "pay-2", event_id: "e-gala", participant_id: "u-p2", amount: 15000, status: "unpaid" },
-  { id: "pay-3", event_id: "e-gala", participant_id: "u-p3", amount: 15000, status: "unpaid" }
-];
-
-const INITIAL_NOTIFICATIONS: SystemNotification[] = [
-  { id: "n-1", title: "Catering budget exceeded by ₹12,500", message: "Catering cost exceeds allocated regional cap. Renegotiate or review vendors.", type: "warning", created_at: "2026-07-13", read: false },
-  { id: "n-2", title: "Budget utilization alert", message: "Annual Gala 2025 spend has reached 83% of allocated budget limit.", type: "warning", created_at: "2026-07-14", read: false },
-  { id: "n-3", title: "Welcome to ExpenseVision AI", message: "Create a new event, invite participants, and let AI scan your receipts.", type: "success", created_at: "2026-07-14", read: false }
-];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -212,298 +51,208 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return s ? JSON.parse(s) : null;
   });
 
-  const [users, setUsers] = useState<User[]>(() => {
-    const s = localStorage.getItem("ev_users");
-    return s ? JSON.parse(s) : INITIAL_USERS;
+  const [users, setUsers] = useState<User[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [settings, setSettings] = useState<Settings>({
+    currency: "₹",
+    language: "en",
+    theme: "dark",
+    approvalLimit: 10000
   });
 
-  const [events, setEvents] = useState<Event[]>(() => {
-    const s = localStorage.getItem("ev_events");
-    return s ? JSON.parse(s) : INITIAL_EVENTS;
-  });
+  // Initial load from JSON server
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersRes, eventsRes, deptsRes, expsRes, logsRes, notifsRes, settingsRes] = await Promise.all([
+          fetch("http://localhost:3001/users"),
+          fetch("http://localhost:3001/events"),
+          fetch("http://localhost:3001/departments"),
+          fetch("http://localhost:3001/expenses"),
+          fetch("http://localhost:3001/audit_logs"),
+          fetch("http://localhost:3001/notifications"),
+          fetch("http://localhost:3001/settings")
+        ]);
+        
+        if (usersRes.ok) setUsers(await usersRes.json());
+        if (eventsRes.ok) setEvents(await eventsRes.json());
+        if (deptsRes.ok) setDepartments(await deptsRes.json());
+        if (expsRes.ok) setExpenses(await expsRes.json());
+        if (logsRes.ok) setAuditLogs(await logsRes.json());
+        if (notifsRes.ok) setNotifications(await notifsRes.json());
+        if (settingsRes.ok) setSettings(await settingsRes.json());
+      } catch (err) {
+        console.warn("DB fetch failed, relying on local state.");
+      }
+    };
+    fetchData();
+  }, []);
 
-  const [subEvents, setSubEvents] = useState<SubEvent[]>(() => {
-    const s = localStorage.getItem("ev_sub_events");
-    return s ? JSON.parse(s) : INITIAL_SUB_EVENTS;
-  });
+  // Validate current user role and session
+  useEffect(() => {
+    if (currentUser) {
+      if (!["Admin", "Event Manager", "Department Manager"].includes(currentUser.role)) {
+        setCurrentUser(null);
+        localStorage.removeItem("ev_current_user");
+      }
+    }
+  }, [currentUser]);
 
-  const [participants, setParticipants] = useState<Participant[]>(() => {
-    const s = localStorage.getItem("ev_participants");
-    return s ? JSON.parse(s) : INITIAL_PARTICIPANTS;
-  });
-
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const s = localStorage.getItem("ev_expenses");
-    return s ? JSON.parse(s) : INITIAL_EXPENSES;
-  });
-
-  const [vendors, setVendors] = useState<Vendor[]>(() => {
-    const s = localStorage.getItem("ev_vendors");
-    return s ? JSON.parse(s) : INITIAL_VENDORS;
-  });
-
-  const [payments, setPayments] = useState<Payment[]>(() => {
-    const s = localStorage.getItem("ev_payments");
-    return s ? JSON.parse(s) : INITIAL_PAYMENTS;
-  });
-
-  const [notifications, setNotifications] = useState<SystemNotification[]>(() => {
-    const s = localStorage.getItem("ev_notifications");
-    return s ? JSON.parse(s) : INITIAL_NOTIFICATIONS;
-  });
-
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    const s = localStorage.getItem("ev_settings");
-    return s ? JSON.parse(s) : { currency: "₹", warningThreshold: 0.8, theme: "dark" };
-  });
-
-  // Sync with LocalStorage
+  // Sync current user to localstorage
   useEffect(() => {
     localStorage.setItem("ev_current_user", JSON.stringify(currentUser));
   }, [currentUser]);
 
-  useEffect(() => {
-    localStorage.setItem("ev_users", JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_events", JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_sub_events", JSON.stringify(subEvents));
-  }, [subEvents]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_participants", JSON.stringify(participants));
-  }, [participants]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_expenses", JSON.stringify(expenses));
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_vendors", JSON.stringify(vendors));
-  }, [vendors]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_payments", JSON.stringify(payments));
-  }, [payments]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_notifications", JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem("ev_settings", JSON.stringify(settings));
-    // Apply theme
-    if (settings.theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [settings]);
-
-  // Auth Operations
-  const login = async (email: string, password?: string, role?: UserRole): Promise<User> => {
-    try {
-      // Direct demo login fallback if just providing role without password
-      if (!password && role) {
-         const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
-         const data = await res.json();
-         if (data.length > 0) {
-            setCurrentUser(data[0]);
-            return data[0];
-         }
-         // Auto-register demo user if not found
-         const newUser = {
-            id: `u-${Math.random().toString(36).substr(2, 9)}`,
-            name: email.split("@")[0].toUpperCase(),
-            email,
-            password: "demo",
-            role,
-            created_at: new Date().toISOString().split("T")[0]
-         };
-         const createRes = await fetch("http://localhost:3001/users", {
-           method: "POST",
-           headers: { "Content-Type": "application/json" },
-           body: JSON.stringify(newUser)
-         });
-         const createdUser = await createRes.json();
-         setCurrentUser(createdUser);
-         setUsers(prev => [...prev, createdUser]);
-         return createdUser;
-      }
-
-      // Real login with password
-      const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      
-      if (data.length === 0) {
-        throw new Error("User not found. Use registration or Demo login first.");
-      }
-      
-      const user = data[0];
-      
-      // Simple plain-text check for our mock environment
-      if (user.password !== password && password !== undefined) {
-        throw new Error("Invalid password.");
-      }
-
-      setCurrentUser(user);
-      return user;
-    } catch (err: any) {
-      throw err;
-    }
+  const logAudit = (action: string, details: string) => {
+    if (!currentUser) return;
+    const newLog: AuditLog = {
+      id: `al-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString(),
+      action,
+      user_id: currentUser.id,
+      details
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
   };
 
-  const register = async (name: string, email: string, password?: string, role?: UserRole): Promise<User> => {
-    try {
-      const res = await fetch(`http://localhost:3001/users?email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      
-      if (data.length > 0) {
-        throw new Error("Email already registered. Please login.");
-      }
-
-      const newUser = {
-        id: `u-${Math.random().toString(36).substr(2, 9)}`,
-        name,
-        email,
-        password: password || "default",
-        role: role || "Participant",
-        created_at: new Date().toISOString().split("T")[0]
-      };
-
-      const createRes = await fetch("http://localhost:3001/users", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify(newUser)
-      });
-      const createdUser = await createRes.json();
-      setCurrentUser(createdUser);
-      setUsers(prev => [...prev, createdUser]);
-      return createdUser;
-    } catch (err: any) {
-      throw err;
-    }
+  const login = async (userIdOrEmail: string, password?: string): Promise<User> => {
+    const user = users.find(u => u.id === userIdOrEmail || u.email === userIdOrEmail);
+    if (!user) throw new Error("User not found.");
+    if (user.password !== password) throw new Error("Invalid password.");
+    if (user.status === "disabled") throw new Error("Account is disabled. Contact Admin.");
+    
+    setCurrentUser(user);
+    logAudit("User Login", `User ${user.name} logged in successfully.`);
+    return user;
   };
 
   const logout = () => {
+    if (currentUser) {
+      logAudit("User Logout", `User ${currentUser.name} logged out.`);
+    }
     setCurrentUser(null);
   };
 
-  // Check Budget Warnings
-  const checkBudgetThresholds = (eventId: string, addAmount: number, currentExpenses: Expense[], currentEvents: Event[]) => {
-    const targetEvent = currentEvents.find(e => e.id === eventId);
-    if (!targetEvent) return;
-
-    const totalSpent = currentExpenses
-      .filter(ex => ex.event_id === eventId)
-      .reduce((sum, ex) => sum + ex.amount, 0) + addAmount;
-
-    const usagePct = totalSpent / targetEvent.budget;
+  // User Management
+  const createUser = (userData: Omit<User, "created_at"> & { id?: string }) => {
+    const newUser: User = {
+      ...userData,
+      id: userData.id || `u-${Math.random().toString(36).substr(2, 9)}`,
+      created_at: new Date().toISOString().split("T")[0]
+    };
+    setUsers(prev => [...prev, newUser]);
     
-    if (usagePct >= 1.0) {
-      const newNotif: SystemNotification = {
-        id: `n-warning-${Date.now()}`,
-        title: `CRITICAL: Budget Exceeded for ${targetEvent.title}`,
-        message: `Total spent (${settings.currency}${totalSpent.toLocaleString("en-IN")}) has exceeded the allocated budget of ${settings.currency}${targetEvent.budget.toLocaleString("en-IN")}.`,
-        type: "warning",
-        created_at: new Date().toISOString().split("T")[0],
-        read: false
-      };
-      setNotifications(prev => [newNotif, ...prev]);
-    } else if (usagePct >= settings.warningThreshold) {
-      const newNotif: SystemNotification = {
-        id: `n-warning-${Date.now()}`,
-        title: `Warning: Budget utilization is high for ${targetEvent.title}`,
-        message: `Total spent is ${settings.currency}${totalSpent.toLocaleString("en-IN")} (${Math.round(usagePct * 100)}% of budget limit).`,
-        type: "warning",
-        created_at: new Date().toISOString().split("T")[0],
-        read: false
-      };
-      setNotifications(prev => [newNotif, ...prev]);
-    }
+    // Attempt to persist if JSON server is running
+    fetch("http://localhost:3001/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUser)
+    }).catch(() => {});
+    
+    logAudit("User Created", `Created user ${newUser.name} with role ${newUser.role}`);
   };
 
-  // Event Operations
-  const createEvent = (eventData: Omit<Event, "id" | "organizer_id">) => {
-    if (!currentUser) return;
+  const updateUserStatus = (userId: string, status: "active" | "disabled") => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u));
+    logAudit("User Status Changed", `Changed user ${userId} status to ${status}`);
+  };
+
+  const updateUserRole = (userId: string, role: User["role"]) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u));
+    logAudit("User Role Updated", `Changed user ${userId} role to ${role}`);
+  };
+
+  // Event Management
+  const createEvent = (eventData: Omit<Event, "id">) => {
     const newEvent: Event = {
       ...eventData,
-      id: `e-${Math.random().toString(36).substr(2, 9)}`,
-      organizer_id: currentUser.id
+      id: `e-${Math.random().toString(36).substr(2, 9)}`
     };
-    setEvents(prev => [newEvent, ...prev]);
+    setEvents(prev => [...prev, newEvent]);
     
-    // Auto add notification
-    const newNotif: SystemNotification = {
-      id: `n-${Date.now()}`,
-      title: `New event created: ${newEvent.title}`,
-      message: `Event initialized with a budget of ${settings.currency}${newEvent.budget.toLocaleString("en-IN")}.`,
-      type: "success",
-      created_at: new Date().toISOString().split("T")[0],
-      read: false
-    };
-    setNotifications(prev => [newNotif, ...prev]);
+    fetch("http://localhost:3001/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEvent)
+    }).catch(() => {});
+    
+    logAudit("Event Created", `Created event ${newEvent.title} with budget ${newEvent.budget}`);
   };
 
   const updateEvent = (updated: Event) => {
     setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+    logAudit("Event Updated", `Updated details for event ${updated.id}`);
   };
 
   const deleteEvent = (eventId: string) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
-    setExpenses(prev => prev.filter(ex => ex.event_id !== eventId));
-    setParticipants(prev => prev.filter(p => p.event_id !== eventId));
-    setVendors(prev => prev.filter(v => v.event_id !== eventId));
-    setPayments(prev => prev.filter(p => p.event_id !== eventId));
+    logAudit("Event Deleted", `Deleted event ${eventId}`);
   };
 
-  const archiveEvent = (eventId: string) => {
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: "archived" as const } : e));
-  };
-
-  const unarchiveEvent = (eventId: string) => {
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, status: "active" as const } : e));
-  };
-
-  // SubEvent Operations
-  const addSubEvent = (subEventData: Omit<SubEvent, "id">) => {
-    const newSubEvent: SubEvent = {
-      ...subEventData,
-      id: `se-${Math.random().toString(36).substr(2, 9)}`
+  const assignEventManager = (eventId: string, managerId: string) => {
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, event_manager_id: managerId } : e));
+    logAudit("Event Manager Assigned", `Assigned user ${managerId} to event ${eventId}`);
+    
+    // Notify user
+    const n: Notification = {
+      id: `n-${Date.now()}`,
+      user_id: managerId,
+      message: "You have been assigned as Event Manager.",
+      type: "info",
+      read: false,
+      timestamp: new Date().toISOString()
     };
-    setSubEvents(prev => [...prev, newSubEvent]);
+    setNotifications(prev => [n, ...prev]);
   };
 
-  const updateSubEvent = (updated: SubEvent) => {
-    setSubEvents(prev => prev.map(se => se.id === updated.id ? updated : se));
-  };
-
-  const deleteSubEvent = (subEventId: string) => {
-    setSubEvents(prev => prev.filter(se => se.id !== subEventId));
-  };
-
-  // Participants Operations
-  const addParticipantToEvent = (eventId: string, userId: string) => {
-    const exist = participants.find(p => p.event_id === eventId && p.user_id === userId);
-    if (exist) return;
-    const newPart: Participant = {
-      id: `pt-${Math.random().toString(36).substr(2, 9)}`,
-      event_id: eventId,
-      user_id: userId
+  // Department Management
+  const createDepartment = (deptData: Omit<Department, "id">) => {
+    const newDept: Department = {
+      ...deptData,
+      id: `d-${Math.random().toString(36).substr(2, 9)}`
     };
-    setParticipants(prev => [...prev, newPart]);
+    setDepartments(prev => [...prev, newDept]);
+    
+    fetch("http://localhost:3001/departments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newDept)
+    }).catch(() => {});
+
+    logAudit("Department Created", `Created department ${newDept.name} in event ${newDept.event_id}`);
   };
 
-  const removeParticipantFromEvent = (eventId: string, userId: string) => {
-    setParticipants(prev => prev.filter(p => !(p.event_id === eventId && p.user_id === userId)));
-    setPayments(prev => prev.filter(p => !(p.event_id === eventId && p.participant_id === userId)));
+  const updateDepartment = (dept: Department) => {
+    setDepartments(prev => prev.map(d => d.id === dept.id ? dept : d));
+    logAudit("Department Updated", `Updated department ${dept.id} budget to ${dept.budget}`);
   };
 
-  // Expense Operations
+  const deleteDepartment = (deptId: string) => {
+    setDepartments(prev => prev.filter(d => d.id !== deptId));
+    logAudit("Department Deleted", `Deleted department ${deptId}`);
+  };
+
+  const assignDepartmentManager = (deptId: string, managerId: string) => {
+    setDepartments(prev => prev.map(d => d.id === deptId ? { ...d, manager_id: managerId } : d));
+    logAudit("Department Manager Assigned", `Assigned user ${managerId} to dept ${deptId}`);
+    
+    // Notify user
+    const n: Notification = {
+      id: `n-${Date.now()}`,
+      user_id: managerId,
+      message: "You have been assigned as Department Manager.",
+      type: "info",
+      read: false,
+      timestamp: new Date().toISOString()
+    };
+    setNotifications(prev => [n, ...prev]);
+  };
+
+  // Expense Management
   const addExpense = (expenseData: Omit<Expense, "id" | "created_by">) => {
     if (!currentUser) return;
     const newExpense: Expense = {
@@ -511,209 +260,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `ex-${Math.random().toString(36).substr(2, 9)}`,
       created_by: currentUser.id
     };
-    
-    checkBudgetThresholds(expenseData.event_id, expenseData.amount, expenses, events);
     setExpenses(prev => [newExpense, ...prev]);
+    logAudit("Expense Added", `Expense ${newExpense.id} created as ${newExpense.status}`);
   };
 
-  const editExpense = (updated: Expense) => {
-    setExpenses(prev => prev.map(e => e.id === updated.id ? updated : e));
+  const updateExpenseStatus = (expenseId: string, status: Expense["status"]) => {
+    setExpenses(prev => prev.map(e => e.id === expenseId ? { ...e, status } : e));
+    logAudit("Expense Status Changed", `Expense ${expenseId} status changed to ${status}`);
+    
+    // Check if we need to notify dept manager
+    const ex = expenses.find(e => e.id === expenseId);
+    if (ex && status === "Approved") {
+      const n: Notification = {
+        id: `n-${Date.now()}`,
+        user_id: ex.created_by,
+        message: `Your expense "${ex.description}" was approved.`,
+        type: "success",
+        read: false,
+        timestamp: new Date().toISOString()
+      };
+      setNotifications(prev => [n, ...prev]);
+    }
   };
 
   const deleteExpense = (expenseId: string) => {
     setExpenses(prev => prev.filter(e => e.id !== expenseId));
-    setPayments(prev => prev.filter(p => p.expense_id !== expenseId));
-  };
-
-  // Vendor Operations
-  const addVendor = (vendorData: Omit<Vendor, "id">) => {
-    const newVendor: Vendor = {
-      ...vendorData,
-      id: `v-${Math.random().toString(36).substr(2, 9)}`
-    };
-    setVendors(prev => [newVendor, ...prev]);
-  };
-
-  const editVendor = (updated: Vendor) => {
-    setVendors(prev => prev.map(v => v.id === updated.id ? updated : v));
-  };
-
-  const deleteVendor = (vendorId: string) => {
-    setVendors(prev => prev.filter(v => v.id !== vendorId));
-  };
-
-  const updateVendorPayment = (vendorId: string, status: "paid" | "pending") => {
-    setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, status } : v));
-  };
-
-  // Payments / Cost Split Operations
-  const markPaymentStatus = (paymentId: string, status: "paid" | "unpaid") => {
-    setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
-  };
-
-  const splitExpense = (expenseId: string, type: "equal" | "percentage" | "custom", splits: { [userId: string]: number }) => {
-    const expense = expenses.find(ex => ex.id === expenseId);
-    if (!expense) return;
-
-    // Remove older splits associated with this expense
-    setPayments(prev => prev.filter(p => p.expense_id !== expenseId));
-
-    const newPayments: Payment[] = Object.keys(splits).map(userId => {
-      let shareAmount = 0;
-      if (type === "equal") {
-        shareAmount = expense.amount / Object.keys(splits).length;
-      } else if (type === "percentage") {
-        shareAmount = (expense.amount * splits[userId]) / 100;
-      } else {
-        shareAmount = splits[userId];
-      }
-
-      return {
-        id: `pay-${Math.random().toString(36).substr(2, 9)}`,
-        event_id: expense.event_id,
-        participant_id: userId,
-        expense_id: expenseId,
-        amount: shareAmount,
-        status: "unpaid"
-      };
-    });
-
-    setPayments(prev => [...prev, ...newPayments]);
-    
-    // Add Alert notification
-    const count = Object.keys(splits).length;
-    const alertNotif: SystemNotification = {
-      id: `n-split-${Date.now()}`,
-      title: `Split split configured for ${expense.description}`,
-      message: `Calculated shares for ${count} participants. Total split: ${settings.currency}${expense.amount.toLocaleString("en-IN")}.`,
-      type: "info",
-      created_at: new Date().toISOString().split("T")[0],
-      read: false
-    };
-    setNotifications(prev => [alertNotif, ...prev]);
-  };
-
-  // Settings
-  const updateSettings = (updated: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...updated }));
-  };
-
-  // Notifications helpers
-  const clearNotifications = () => {
-    setNotifications([]);
+    logAudit("Expense Deleted", `Deleted expense ${expenseId}`);
   };
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
-  // AI assistant seeding
-  const seedAISuggestedPlan = (title: string, budget: number, category: any, location: string, planData: any) => {
-    if (!currentUser) return;
-    
-    const eventId = `e-${Math.random().toString(36).substr(2, 9)}`;
-    const newEvent: Event = {
-      id: eventId,
-      title,
-      description: `AI-Generated plan: ${title}. Created with automatic category caps.`,
-      budget,
-      location,
-      event_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 60 days from now
-      category,
-      status: "active",
-      organizer_id: currentUser.id
-    };
-
-    // Add event
-    setEvents(prev => [newEvent, ...prev]);
-
-    // Create expenses from categories
-    const newExpenses: Expense[] = [];
-    const newVendors: Vendor[] = [];
-
-    // Map AI recommendations into actual transactions
-    planData.categories.forEach((c: any) => {
-      const expenseId = `ex-${Math.random().toString(36).substr(2, 9)}`;
-      newExpenses.push({
-        id: expenseId,
-        event_id: eventId,
-        amount: c.amount,
-        category: c.name,
-        description: `Allocated budget share for ${c.name}`,
-        created_by: currentUser.id,
-        date: new Date().toISOString().split("T")[0]
-      });
-
-      // Create a mock vendor for that category
-      newVendors.push({
-        id: `v-${Math.random().toString(36).substr(2, 9)}`,
-        event_id: eventId,
-        vendor_name: `${c.name} Solutions Group`,
-        contact: "9999888877",
-        email: `info@${c.name.toLowerCase()}-vendors.com`,
-        amount: c.amount,
-        service_type: c.name === "Food" ? "Catering" : c.name === "Venue" ? "Venue Provider" : c.name === "Decoration" ? "Decoration" : "Photography",
-        status: "pending",
-        notes: `AI suggested placeholder vendor. Spend target: ${settings.currency}${c.amount}`
-      });
-    });
-
-    setExpenses(prev => [...newExpenses, ...prev]);
-    setVendors(prev => [...newVendors, ...prev]);
-
-    // Auto notification
-    const successNotif: SystemNotification = {
-      id: `n-${Date.now()}`,
-      title: `Plan applied successfully!`,
-      message: `Created event "${title}" and seeded ${newExpenses.length} category allocations with corresponding vendor outlines.`,
-      type: "success",
-      created_at: new Date().toISOString().split("T")[0],
-      read: false
-    };
-    setNotifications(prev => [successNotif, ...prev]);
+  const updateSettings = (s: Partial<Settings>) => {
+    setSettings(prev => ({ ...prev, ...s }));
   };
 
   return (
-    <AppContext.Provider
-      value={{
-        currentUser,
-        users,
-        events,
-        subEvents,
-        participants,
-        expenses,
-        vendors,
-        payments,
-        notifications,
-        settings,
-        login,
-        register,
-        logout,
-        createEvent,
-        updateEvent,
-        deleteEvent,
-        archiveEvent,
-        unarchiveEvent,
-        addSubEvent,
-        updateSubEvent,
-        deleteSubEvent,
-        addParticipantToEvent,
-        removeParticipantFromEvent,
-        addExpense,
-        deleteExpense,
-        editExpense,
-        addVendor,
-        editVendor,
-        deleteVendor,
-        updateVendorPayment,
-        markPaymentStatus,
-        splitExpense,
-        updateSettings,
-        clearNotifications,
-        markNotificationRead,
-        seedAISuggestedPlan
-      }}
-    >
+    <AppContext.Provider value={{
+      currentUser, users, events, departments, expenses, auditLogs, notifications, settings,
+      login, logout,
+      createUser, updateUserStatus, updateUserRole,
+      createEvent, updateEvent, deleteEvent, assignEventManager,
+      createDepartment, updateDepartment, deleteDepartment, assignDepartmentManager,
+      addExpense, updateExpenseStatus, deleteExpense,
+      logAudit, markNotificationRead, updateSettings
+    }}>
       {children}
     </AppContext.Provider>
   );
@@ -721,8 +313,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) {
-    throw new Error("useApp must be used within an AppProvider");
-  }
+  if (!context) throw new Error("useApp must be used within an AppProvider");
   return context;
 };
