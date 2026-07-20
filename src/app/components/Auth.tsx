@@ -89,7 +89,7 @@ export default function Auth({ setPage }: AuthProps) {
           </div>
           <h2 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
             Enterprise Grade <br />
-            <span className="shimmer-text">Expense Auditing</span>
+            <span className="shimmer-text-mono">Expense Auditing</span>
           </h2>
           <p className="text-slate-400 text-sm leading-relaxed max-w-md">
             Login to access your roles, view remaining balances, scan receipts, split attendee shares, and generate fiscal audits. Swap roles at any time in the sidebar.
